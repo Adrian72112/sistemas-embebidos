@@ -18,8 +18,63 @@ void size_of_types(void)
     printf("Size of uint64_t: %zu\n", sizeof(uint64_t));
 }
 
-void main()
+void intercambiar_elementos_punteros(int *a, int *b)
 {
-    hello_world();
-    size_of_types();
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void contar_vocales(char *cadena)
+{
+    int vocales = 0;
+    int i = 0;
+    
+    while (cadena[i] != '\0')
+    {
+        if (cadena[i] == 'a' || cadena[i] == 'e' || cadena[i] == 'i' || cadena[i] == 'o' || cadena[i] == 'u')
+        {
+            vocales++;
+        }
+        i++;
+    }
+
+    printf("La cadena tiene %d vocales\n", vocales);
+    printf("La cadena tiene %d consonantes\n", i - vocales);
+}
+
+// para imprimir una cadena de caracteres al revés utilizando un puntero.
+void imprimir_cadena_al_reves(char *cadena)
+{
+    int i = 0;
+    while (cadena[i] != '\0')
+    {
+        i++;
+    }
+    i--;
+    while (i >= 0)
+    {
+        printf("%c", cadena[i]);
+        i--;
+    }
+    printf("\n");
+}
+
+int length(char *cadena)
+{
+    int i = 0;
+    while (cadena[i] != '\0')
+    {
+        i++;
+    }
+
+    return i;
+}
+
+int main()
+{
+    contar_vocales("hola mundo");
+    printf("%i", length("Buen dia"));
+
+    return 1;
 }
