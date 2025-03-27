@@ -1,2 +1,3 @@
-# sistemas-embebidos
-Sistemas embebidos
+# SISTEMAS EMBEBIDOS
+
+Integrantes: Sofia Nicoletti - Pierina Borsieri - Agustina Bacigalupe - Adrián Tesore
