@@ -56,7 +56,7 @@ typedef struct nodo_estudiante
  *  Retorno:
  *      nodo_estudiante_t - Nodo de la lista enlazada inicializado con el estudiante.
  *******************************************************************/
-nodo_estudiante_t crear_lista_de_estudiantes(estudiante_t *estudiante);
+nodo_estudiante_t *crear_lista_de_estudiantes(estudiante_t *estudiante);
 
 /*******************************************************************
  *  Función: agregar_estudiante
