@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "my_lib_1.h"
+#include "parte_2.h"
 
 int main()
 {
