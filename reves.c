@@ -2,19 +2,17 @@
 #include <string.h>
 
 char* reverse_string(char *string) {
-    int len = strlen(string);
-    int principio = 0;
-    int fin = len - 1;
+    char *inicio = string;                   // puntero al primer carácter
+    char *fin = string + strlen(string) - 1; // puntero al último carácter
 
-    while (principio < fin) {
-        // intercambiar los caracteres
-        char temp = string[principio];
-        string[principio] = string[fin];
-        string[fin] = temp;
-        principio++;
-        fin--;
+    while (inicio < fin) {
+        char temp = *inicio; //intercambio
+        *inicio = *fin;
+        *fin = temp;
+
+        inicio++; // avanzar puntero al siguiente carácter
+        fin--;    // retroceder puntero al anterior carácter
     }
-
     return string;
 }
 
@@ -24,3 +22,4 @@ int main() {
     printf("invertida: %s\n", reverse_string(str));
     return 0;
 }
+

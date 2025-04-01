@@ -21,7 +21,7 @@ int32_t string_words(char *string) {
         } else {
             enpalabra = 0; // cuando no estamos en palbra osea estoy en espacio
         }
-        string++; // Pasamos al siguiente carácter
+        string++; // pasamos al siguiente carácter
     }
     return contador;
 }
