@@ -44,7 +44,7 @@ matriz_t matrix_sub(matriz_t A, matriz_t B)
 }
 
 // Función swap: intercambia el contenido de dos elementos.
-// Recibe punteros a los elementos y el tamaño en bytes del tipo de dato.
+// Recibe punteros a los elementos y el tamanio en bytes del tipo de dato.
 int swap(void *elem_1, void *elem_2, size_t data_type)
 {
     if (!elem_1 || !elem_2)
@@ -80,4 +80,80 @@ int consonantes(char *string)
     }
     printf("Vocales: %d, Consonantes: %d\n", vowels, cons);
     return cons;
+}
+//Funcion string_to_caps reemplaza todas las minusculas por mayusculas
+void string_to_caps(char* string){
+    while (*string != '\0'){
+        if (*string >= 'a' && *string<= 'z'){
+            *string= *string -('a' - 'A');
+        }
+        string++;
+    }
+}
+
+//Funcion string_to_min reemplaza todas las mayusculas por minusculas
+void string_to_min(char* string){
+    while (*string !='\0'){
+        if (*string >= 'A' && *string <= 'Z'){
+            *string= *string -('A' - 'a');
+        }
+        string++;
+    }
+}
+
+//Funcion sum suma dos numeros complejos
+//Imprime el resultado de la suma.
+complex_t sum(complex_t a, complex_t b){
+    complex_t resultado;
+    resultado.real= a.real + b.real;
+    resultado.imag= a.imag + b.imag;
+    return resultado;
+}
+
+//Funcion prod realiza el productos de dos numeros complejos 
+// Imprime el resultado de la multiplicacion
+complex_t prod(complex_t a, complex_t b){
+    complex_t resultado;
+    resultado.real = (a.real * b.real) - (a.imag * b.imag);
+    resultado.imag = (a.real * b.imag) + (a.imag * b.real);
+    return resultado;
+}
+
+//Funcion days_left realiza la diferencia de dias entre dos fechas 
+// Imprime el resultado de la diferencia 
+
+//  Funcion auxiliar para verificar si el anio es bisiesto 
+int is_leap_year(int anio) {
+    return (anio % 4 == 0 && anio % 100 != 0) || (anio % 400 == 0);
+}
+
+//Funcion auxiliar devuelve la cantidad de días de un mes específico
+int days_in_month(int month, int year) {
+    int days_per_month[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    if (month == 2 && is_leap_year(year)) {
+        return 29;
+    }
+    return days_per_month[month - 1];
+}
+//Funcion auxiliar calcula el número total de días desde 01/01/0000 hasta la fecha dada
+int total_days_until(date_t date) {
+    int days = 0;
+
+    for (int y = 0; y < date.anio; y++) {
+        days += is_leap_year(y) ? 366 : 365;
+    }
+
+    for (int m = 1; m < date.mes; m++) {
+        days += days_in_month(m, date.anio);
+    }
+
+    days += date.dia;
+
+    return days;
+}
+//Calcula la diferencia de dias entre dos fechas 
+int days_left(date_t start, date_t finish){
+    int start_days = total_days_until(start);
+    int end_days = total_days_until(finish);
+    return end_days - start_days;
 }
