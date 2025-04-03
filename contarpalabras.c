@@ -8,6 +8,7 @@ int main() {
     printf("Número de palabras: %d\n", string_words(text));
     return 0;
 }
+
 int32_t string_words(char *string) {
     int32_t contador = 0;
     int enpalabra = 0; // 0 si está fuera de una palabra, 1 si está dentro.
