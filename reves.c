@@ -23,3 +23,4 @@ int main() {
     return 0;
 }
 
+//funciona casi igual que la de arrays llo unico que en esta se utiliza un piuntero, ya que un string es un arrays.
