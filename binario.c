@@ -1,24 +1,23 @@
 #include <stdio.h>
-#include <math.h> //calcular potencias
+#include <math.h> 
 
 int main() {
-    long long binario;  // Usamos long long para aceptar números grandes
+    int pipipopo=1010;
+    int resultado = binario(pipipopo);
+    
+}
+    
+int binario (int binario) {
     int decimal = 0, potencia = 0, digito;
+    scanf("%lld", &binario); // "%lld" lee un número ingresado por el usuario y lo guarda en la variable binario
 
-    // Pedir el número binario al usuario
-    printf("Ingrese un numero binario");
-    scanf("%lld", &binario); // "%lld" Lee un número ingresado por el usuario y lo guarda en la variable binario
-
-    // Convertir a decimal
     while (binario > 0) {
-        digito = binario % 10;   // Obtener el último dígito (0 o 1)
-        decimal += digito * pow(2, potencia);  // Sumar su valor en decimal
-        binario /= 10;  // Eliminar el último dígito
-        potencia++;      // Aumentar la potencia de 2
+        digito = binario % 10;  
+        decimal += digito * pow(2, potencia);  // sumar su valor en decimal
+        binario /= 10;  
+        potencia++;      
     }
 
-    // Mostrar resultado
     printf("El equivalente decimal es: %d\n", decimal);
-
     return 0;
 }

@@ -2,16 +2,16 @@
 #include <string.h>
 
 char* reverse_string(char *string) {
-    char *inicio = string;                   // puntero al primer carácter
-    char *fin = string + strlen(string) - 1; // puntero al último carácter
+    char *inicio = string;                   
+    char *fin = string + strlen(string) - 1;
 
     while (inicio < fin) {
-        char temp = *inicio; //intercambio
+        char temp = *inicio; 
         *inicio = *fin;
         *fin = temp;
 
-        inicio++; // avanzar puntero al siguiente carácter
-        fin--;    // retroceder puntero al anterior carácter
+        inicio++; 
+        fin--;    
     }
     return string;
 }
