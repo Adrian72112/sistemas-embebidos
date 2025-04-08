@@ -56,7 +56,7 @@ typedef struct nodo_estudiante
  *  Retorno:
  *      nodo_estudiante_t - Nodo de la lista enlazada inicializado con el estudiante.
  *******************************************************************/
-nodo_estudiante_t *crear_lista_de_estudiantes(estudiante_t *estudiante);
+nodo_estudiante_t *crear_lista_de_estudiantes(const estudiante_t *estudiante);
 
 /*******************************************************************
  *  Función: agregar_estudiante
@@ -72,7 +72,7 @@ nodo_estudiante_t *crear_lista_de_estudiantes(estudiante_t *estudiante);
  *  Retorno:
  *      void - La función no retorna valor.
  *******************************************************************/
-void agregar_estudiante(nodo_estudiante_t *lista, estudiante_t *estudiante);
+void agregar_estudiante(nodo_estudiante_t *lista, const estudiante_t *estudiante);
 
 /*******************************************************************
  *  Función: eliminar_estudiante
@@ -88,7 +88,7 @@ void agregar_estudiante(nodo_estudiante_t *lista, estudiante_t *estudiante);
  *  Retorno:
  *      void - La función no retorna valor.
  *******************************************************************/
-void eliminar_estudiante(nodo_estudiante_t *lista, char *ci);
+void eliminar_estudiante(nodo_estudiante_t **lista, const char *ci);
 
 /*******************************************************************
  *  Función: mostrar_estudiantes
@@ -106,6 +106,17 @@ void eliminar_estudiante(nodo_estudiante_t *lista, char *ci);
  *  Retorno:
  *      void - La función no retorna valor.
  *******************************************************************/
-void mostrar_estudiantes(nodo_estudiante_t *lista, atributo_estudiante_t filter);
+void mostrar_estudiantes(const nodo_estudiante_t *lista, atributo_estudiante_t filter);
+
+/***************************************************************************
+ * Funcion: liberarLista
+ *
+ * Descripcion:
+ *  Libera la memoria reservada de la lista enlazada de estudiantes.
+ *
+ * Parametros:
+ *  nodo_estudiante_t *lista - Puntero a la lista.
+ ***************************************************************************/
+void liberarLista(nodo_estudiante_t *lista);
 
 #endif /* MY_LIB_2_H_ */

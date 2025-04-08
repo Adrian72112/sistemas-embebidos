@@ -57,6 +57,18 @@ if "%1"=="run" (
     exit /b
 )
 
+if "%1"=="test" (
+    echo 🚀 Ejecutando tests...
+    if not exist "%BUILD_DIR%" (
+        echo ❌ No se encontro el directorio "%BUILD_DIR%". Compila primero con "build.cmd compile".
+        exit /b 1
+    )
+    cd "%BUILD_DIR%"
+    ctest --output-on-failure
+    cd ..
+    exit /b
+)
+
 :usage
 echo ❌ Uso: build.cmd {compile|clean|run}
 exit /b

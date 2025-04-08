@@ -26,3 +26,14 @@ target_include_directories(mi_programa PRIVATE
     "${component_lib}/${lib_1}/${include_lib}"
     "${component_lib}/${lib_2}/${include_lib}"
 )
+
+# Agregar el ejecutable de pruebas para parte_2_lib
+add_executable(test_estudiantes 
+    ${CMAKE_CURRENT_SOURCE_DIR}/${component_lib}/${lib_2}/tests/test_estudiantes.c
+)
+# Vincular las bibliotecas a los tests
+target_link_libraries(test_estudiantes PRIVATE ${lib_1} ${lib_2})
+
+# Activar pruebas y registrar el test en CTest
+enable_testing()
+add_test(NAME TestEstudiantes COMMAND test_estudiantes)
