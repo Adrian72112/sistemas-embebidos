@@ -17,6 +17,19 @@
 
 typedef struct
 {
+    float real;
+    float imag;
+} complex_t;
+
+typedef struct
+{
+    int dia;
+    int mes;
+    int anio;
+} date_t;
+
+typedef struct
+{
     int rows;
     int cols;
     int **data;
@@ -67,6 +80,7 @@ int swap(void *elem_1, void *elem_2, size_t data_type);
  *      int - Número total de consonantes en el string.
  *******************************************************************/
 int consonantes(char *string);
+
 /*******************************************************************
  *  Función: remplazar caracteres en minúsculas con mayúsculas
  *
@@ -79,8 +93,22 @@ int consonantes(char *string);
  *  Retorno:
  *      void
  *******************************************************************/
-void string_to_caps(char*string);
-void string_to_min(char*string);
+void string_to_caps(char *string);
+
+/*******************************************************************
+ *  Función: remplazar caracteres en mayúsculas con minúsculas
+ *
+ *  Descripción:
+ *      Lee una oración y reemplaza los caracteres en mayúsculas con minúsculas o viceversa según decida el usuario
+ *
+ *  Parámetros:
+ *      char *string - String de entrada.
+ *
+ *  Retorno:
+ *      void
+ *******************************************************************/
+void string_to_min(char *string);
+
 /*******************************************************************
  *  Función: Sumar dos numeros complejos
  *
@@ -94,11 +122,8 @@ void string_to_min(char*string);
  *  Retorno:
  *      complex_t
  *******************************************************************/
-typedef struct{
-    float real;
-    float imag;
-}complex_t;
 complex_t sum(complex_t a, complex_t b);
+
 /*******************************************************************
  *  Función: multiplicar dos numeros complejos
  *
@@ -113,6 +138,7 @@ complex_t sum(complex_t a, complex_t b);
  *      complex_t
  *******************************************************************/
 complex_t prod(complex_t a, complex_t b);
+
 /*******************************************************************
  *  Función: dada dos fechas devolver la diferencia de dias entre ellas
  *  Descripción:
@@ -123,14 +149,77 @@ complex_t prod(complex_t a, complex_t b);
  *      date_t finish - fecha fin.
  *
  *  Retorno:
- *      int 
+ *      int
  *******************************************************************/
-
- typedef struct{
-    int dia;
-    int mes;
-    int anio;
- }date_t;
 int days_left(date_t start, date_t finish);
+
+/*******************************************************************
+ *  Función: reverse_string
+ *  Descripción:
+ *      Invierte el contenido de una cadena de texto.
+ *
+ *  Parámetros:
+ *      char *string - Cadena de caracteres a invertir.
+ *
+ *  Retorno:
+ *      char* - Cadena invertida.
+ *******************************************************************/
+char *reverse_string(char *string);
+
+/*******************************************************************
+ *  Función: ecuacion
+ *  Descripción:
+ *      Determina la cantidad de soluciones reales de una ecuación
+ *      cuadrática de la forma ax^2 + bx + c = 0.
+ *
+ *  Parámetros:
+ *      float a - Coeficiente cuadrático.
+ *      float b - Coeficiente lineal.
+ *      float c - Término independiente.
+ *
+ *  Retorno:
+ *      int - Número de soluciones reales (0, 1 o 2).
+ *******************************************************************/
+int ecuacion(float a, float b, float c);
+
+/*******************************************************************
+ *  Función: cuentaletras
+ *  Descripción:
+ *      Cuenta la cantidad de letras (caracteres alfabéticos) en una palabra.
+ *
+ *  Parámetros:
+ *      char *palabra - Cadena de texto a analizar.
+ *
+ *  Retorno:
+ *      int - Cantidad de letras encontradas.
+ *******************************************************************/
+int cuentaletras(char *palabra);
+
+/*******************************************************************
+ *  Función: string_words
+ *  Descripción:
+ *      Cuenta la cantidad de palabras en una cadena de texto.
+ *      Se considera palabra a cualquier grupo de caracteres separados por espacios.
+ *
+ *  Parámetros:
+ *      char *string - Cadena de texto a analizar.
+ *
+ *  Retorno:
+ *      int - Número de palabras en la cadena.
+ *******************************************************************/
+int string_words(char *string);
+
+/*******************************************************************
+ *  Función: binario
+ *  Descripción:
+ *      Convierte un número binario representado como entero en su equivalente decimal.
+ *
+ *  Parámetros:
+ *      int binario - Número binario (ej: 1011) representado como entero.
+ *
+ *  Retorno:
+ *      int - Valor decimal equivalente.
+ *******************************************************************/
+int binario(int binario);
 
 #endif /* MY_LIB_1_H_ */
