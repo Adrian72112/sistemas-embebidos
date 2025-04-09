@@ -222,4 +222,19 @@ int string_words(char *string);
  *******************************************************************/
 int binario(int binario);
 
+/*******************************************************************
+ *  Función: string_length
+ *  Descripción:
+ *      Calcula la longitud de una cadena de caracteres.
+ *
+ *  Parámetros:
+ *      char *string - Cadena de texto a analizar.
+ *
+ *  Retorno:
+ *      int - Longitud de la cadena (sin contar el carácter nulo).
+ *******************************************************************/
+int string_length(char *string);
+
+int contiene(char *palabra, char *palabra2);
+
 #endif /* MY_LIB_1_H_ */
