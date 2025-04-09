@@ -235,6 +235,6 @@ int binario(int binario);
  *******************************************************************/
 int string_length(char *string);
 
-int contiene(char *palabra, char *palabra2);
+int find_in_string(char *palabra, char *palabra2);
 
 #endif /* MY_LIB_1_H_ */

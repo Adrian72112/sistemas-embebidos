@@ -278,7 +278,7 @@ int string_length(char *string)
     return contador;
 }
 
-int contiene(char *palabra, char *palabra2)
+int find_in_string(char *palabra, char *palabra2)
 {
     for (; *palabra2 != '\0'; palabra2++)
     { // Recorremos palabra2 con punteros
