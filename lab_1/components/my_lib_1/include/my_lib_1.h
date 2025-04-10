@@ -36,6 +36,20 @@ typedef struct
 } matriz_t;
 
 /*******************************************************************
+ *  Función: init_lab
+ *
+ *  Descripción:
+ *      Despliegue en pantalla el mensaje “Laboratorio lenguaje C de ..."
+ *
+ *  Parámetros:
+ *      void
+ *
+ *  Retorno:
+ *      void
+ *******************************************************************/
+void init_lab(void);
+
+/*******************************************************************
  *  Función: matrix_sub
  *
  *  Descripción:

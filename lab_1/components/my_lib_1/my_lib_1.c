@@ -4,6 +4,16 @@
 #include <ctype.h>
 #include <math.h>
 #include "my_lib_1.h"
+
+void init_lab(void)
+{
+    printf("Laboratorio lenguaje C de Grupo 1\n");
+    printf("Integrantes:\n");
+    printf("1. Sofia Nicoletti   1\n");
+    printf("2. Pierina Borsieri 2\n");
+    printf("3. Agustina Bacigalupe 3\n");
+    printf("4. Adrián Tesore 4\n");
+}
 // Función que devuelve la resta de dos matrices A - B.
 // Se asume que ambas matrices tienen las mismas dimensiones.
 matriz_t matrix_sub(matriz_t A, matriz_t B)
