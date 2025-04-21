@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "parte_2.h" // Se asume que aquí se declaran:
-                     // nodo_estudiante_t, estudiante_t,
-                     // crear_lista_de_estudiantes, agregar_estudiante,
-                     // eliminar_estudiante y liberarLista.
+#include "parte_2.h"
 
 void test_crear_lista_de_estudiantes(void)
 {
@@ -108,18 +105,51 @@ void test_eliminar_estudiante(void)
     assert(lista == NULL);
 }
 
+void test_mostrar_lista_ordenada_por_ci(void)
+{
+    estudiante_t e1, e2, e3;
+    strcpy(e1.nombre, "Juan");
+    strcpy(e1.apellido, "Perez");
+    strcpy(e1.ci, "22334455");
+    e1.grado = 'A';
+    e1.promedio_calificacion = 8.5f;
+
+    strcpy(e2.nombre, "Ana");
+    strcpy(e2.apellido, "Garcia");
+    strcpy(e2.ci, "11223344");
+    e2.grado = 'B';
+    e2.promedio_calificacion = 7.0f;
+
+    strcpy(e3.nombre, "Luis");
+    strcpy(e3.apellido, "Martinez");
+    strcpy(e3.ci, "33445566");
+    e3.grado = 'C';
+    e3.promedio_calificacion = 9.0f;
+
+    nodo_estudiante_t *lista = crear_lista_de_estudiantes(&e1);
+    agregar_estudiante(lista, &e2);
+    agregar_estudiante(lista, &e3);
+
+    printf(">>> Test mostrar_lista_ordenada_por_ci:");
+    mostrar_lista_ordenada_por_ci(lista);
+
+    liberarLista(lista);
+}
+
 int main(void)
 {
     test_crear_lista_de_estudiantes();
-    printf("test_crear_lista_de_estudiantes passed.\n");
+    printf("✅ test_crear_lista_de_estudiantes passed.\n");
 
     test_agregar_estudiante();
-    printf("test_agregar_estudiante passed.\n");
+    printf("✅ test_agregar_estudiante passed.\n");
 
     test_eliminar_estudiante();
-    printf("test_eliminar_estudiante passed.\n");
+    printf("✅ test_eliminar_estudiante passed.\n");
 
-    printf("Todos los tests pasaron.\n");
+    test_mostrar_lista_ordenada_por_ci();
+    printf("✅ test_mostrar_lista_ordenada_por_ci ran (verificar orden visual).\n");
 
+    printf("🎉 Todos los tests de parte 2 completados.\n");
     return 0;
 }

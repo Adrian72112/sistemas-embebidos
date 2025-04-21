@@ -21,7 +21,8 @@ int main(void)
         printf("1. Agregar Estudiante\n");
         printf("2. Eliminar Estudiante\n");
         printf("3. Mostrar Estudiantes\n");
-        printf("4. Salir\n");
+        printf("4. Mostrar Estudiantes Ordenados por CI\n");
+        printf("5. Salir\n");
         printf("Seleccione una opcion: ");
 
         if (scanf("%d", &opcion) != 1)
@@ -59,12 +60,22 @@ int main(void)
             }
             break;
         case 4:
+            if (lista == NULL)
+            {
+                printf("\nLa lista de estudiantes esta vacia.\n");
+            }
+            else
+            {
+                mostrar_lista_ordenada_por_ci(lista);
+            }
+            break;
+        case 5:
             printf("\nSaliendo del programa. Adios!\n");
             break;
         default:
             printf("\nOpcion no valida. Intente de nuevo.\n");
         }
-    } while (opcion != 4);
+    } while (opcion != 5);
 
     // Liberar la memoria reservada para la lista antes de salir
     liberarLista(lista);

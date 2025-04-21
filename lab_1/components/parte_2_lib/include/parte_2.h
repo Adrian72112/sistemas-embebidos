@@ -119,4 +119,32 @@ void mostrar_estudiantes(const nodo_estudiante_t *lista, atributo_estudiante_t f
  ***************************************************************************/
 void liberarLista(nodo_estudiante_t *lista);
 
+/*******************************************************************
+ *  Función: mostrar_lista_ordenada_por_ci
+ *
+ *  Descripción:
+ *      Muestra los estudiantes ordenados en forma ascendente según su CI.
+ *
+ *  Parámetros:
+ *      nodo_estudiante_t *lista - Puntero a la lista enlazada de estudiantes.
+ *
+ *  Retorno:
+ *      void - La función no retorna valor.
+ *******************************************************************/
+void mostrar_lista_ordenada_por_ci(nodo_estudiante_t *lista);
+
+/*******************************************************************
+ *  Función: calificacion_letra
+ *
+ *  Descripción:
+ *      Dado un puntaje numérico, devuelve una letra asociada a la calificación.
+ *
+ *  Parámetros:
+ *      float calificacion - Valor entre 0 y 100.
+ *
+ *  Retorno:
+ *      const char* - Letra correspondiente a la calificación.
+ *******************************************************************/
+const char *calificacion_letra(float calificacion);
+
 #endif /* MY_LIB_2_H_ */

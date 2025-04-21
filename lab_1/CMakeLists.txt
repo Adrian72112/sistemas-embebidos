@@ -19,12 +19,18 @@ add_subdirectory("${component_lib}/${lib_2}")
 add_executable(test_estudiantes 
     ${CMAKE_CURRENT_SOURCE_DIR}/${component_lib}/${lib_2}/tests/test_estudiantes.c
 )
+add_executable(test_my_lib_1 
+    ${CMAKE_CURRENT_SOURCE_DIR}/${component_lib}/${lib_1}/tests/test_my_lib_1.c
+)
 # Vincular las bibliotecas a los tests
 target_link_libraries(test_estudiantes "${lib_2}")
+target_link_libraries(test_my_lib_1 "${lib_1}")
 
 # Activar pruebas y registrar el test en CTest
 enable_testing()
 add_test(NAME TestEstudiantes COMMAND test_estudiantes)
+add_test(NAME TestLib1 COMMAND test_my_lib_1)
+
 
 # Definir el ejecutable principal
 add_executable(mi_programa src/main.c)

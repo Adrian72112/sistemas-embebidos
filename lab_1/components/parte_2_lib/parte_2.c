@@ -107,20 +107,93 @@ void mostrar_estudiantes(const nodo_estudiante_t *lista, atributo_estudiante_t f
             printf("Grado: %c\n", lista->dato.grado);
             break;
         case PROMEDIO_CALIFICACION:
-            printf("Promedio de Calificación: %.2f\n", lista->dato.promedio_calificacion);
+            printf("Promedio de Calificación: %.2f (%s)\n",
+                   lista->dato.promedio_calificacion,
+                   calificacion_letra(lista->dato.promedio_calificacion));
             break;
         default:
             /* Si se pasa un filtro no definido, se muestra toda la información */
-            printf("Nombre: %s, Apellido: %s, CI: %s, Grado: %c, Promedio: %.2f\n",
+            printf("Nombre: %s, Apellido: %s, CI: %s, Grado: %c, Promedio: %.2f (%s)\n",
                    lista->dato.nombre,
                    lista->dato.apellido,
                    lista->dato.ci,
                    lista->dato.grado,
-                   lista->dato.promedio_calificacion);
+                   lista->dato.promedio_calificacion,
+                   calificacion_letra(lista->dato.promedio_calificacion));
             break;
         }
         lista = lista->siguiente;
     }
+}
+
+void mostrar_lista_ordenada_por_ci(nodo_estudiante_t *lista)
+{
+    if (!lista)
+    {
+        printf("No hay estudiantes para mostrar.\n");
+        return;
+    }
+
+    // Contar cuántos elementos hay
+    int count = 0;
+    nodo_estudiante_t *temp = lista;
+    while (temp != NULL)
+    {
+        count++;
+        temp = temp->siguiente;
+    }
+
+    // Crear array de punteros a estudiantes
+    estudiante_t *arr[count];
+    temp = lista;
+    for (int i = 0; i < count; i++)
+    {
+        arr[i] = &temp->dato;
+        temp = temp->siguiente;
+    }
+
+    // Ordenar array de punteros usando strcmp por CI
+    for (int i = 0; i < count - 1; i++)
+    {
+        for (int j = i + 1; j < count; j++)
+        {
+            if (strcmp(arr[i]->ci, arr[j]->ci) > 0)
+            {
+                estudiante_t *aux = arr[i];
+                arr[i] = arr[j];
+                arr[j] = aux;
+            }
+        }
+    }
+
+    // Mostrar la lista ordenada
+    printf("Estudiantes ordenados por CI:\n");
+    for (int i = 0; i < count; i++)
+    {
+        printf("Nombre: %s, Apellido: %s, CI: %s, Grado: %c, Promedio: %.2f (%s)\n",
+               arr[i]->nombre,
+               arr[i]->apellido,
+               arr[i]->ci,
+               arr[i]->grado,
+               arr[i]->promedio_calificacion,
+               calificacion_letra(arr[i]->promedio_calificacion));
+    }
+}
+
+const char *calificacion_letra(float calificacion)
+{
+    if (calificacion <= 30)
+        return "D";
+    else if (calificacion <= 60)
+        return "R";
+    else if (calificacion <= 75)
+        return "B";
+    else if (calificacion <= 81)
+        return "BMB";
+    else if (calificacion <= 94)
+        return "MB";
+    else
+        return "S";
 }
 
 void liberarLista(nodo_estudiante_t *lista)
