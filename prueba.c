@@ -3,6 +3,8 @@
 #include <stdint.h>  // Necesario para int32_t
 
 int32_t string_length(char *string) {
+    
+
     int contador = 0;
 
     // Corrección: Incrementar contador dentro del for
@@ -14,10 +16,15 @@ int32_t string_length(char *string) {
 }
 
 int main() {
-    char palabra[] = "hola";
+    char palabra[] = "";
+    if (string_length(palabra)==0){
+        printf("-1");
+    }
+    else{
+        printf("La longitud del string es: %d\n", string_length(palabra));
+
+    }
     
-    // Corrección: Llamar a la función y luego imprimir el resultado
-    printf("La longitud del string es: %d\n", string_length(palabra));
 
     return 0;
 }
@@ -41,23 +48,23 @@ int contiene(char *palabra, char *palabra2) {//*palabra2, valor al que apunta el
             }
         }
     }
-    return 0; // Si no encontramos la palabra, retornamos 0
+    return -1; // Si no encontramos la palabra, retornamos 0
 }
 
 int main() {
-    char palabra[] = "ola";
+    char palabra[] = "sofia";
     char palabra2[] = "paola";
 
-    if (contiene(palabra, palabra2)) {
+    if (contiene(palabra, palabra2) == 1) {
         printf("La palabra '%s' está dentro de '%s'.\n", palabra, palabra2);
     } else {
-        printf("La palabra '%s' no está dentro de '%s'.\n", palabra, palabra2);
+        printf("-1");
     }
 
-    return 0;
-}
 
+}
 */
+
 
 
 
