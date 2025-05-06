@@ -17,7 +17,7 @@ void led_off(led_strip_t *strip)
     strip->clear(strip, 100);
 }
 
-void led_blink_colors_forever(led_strip_t *strip)
+void led_blink_colors_loop(led_strip_t *strip)
 {
     while (1)
     {

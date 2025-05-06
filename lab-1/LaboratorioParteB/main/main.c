@@ -7,5 +7,5 @@ void app_main(void)
         return;
     }
 
-    led_blink_colors_forever(strip);
+    led_blink_colors_loop(strip);
 }

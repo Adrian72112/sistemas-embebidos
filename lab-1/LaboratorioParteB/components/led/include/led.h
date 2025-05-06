@@ -46,4 +46,4 @@ void led_off(led_strip_t *strip);
  * 
  * @param[in] strip Instancia del LED previamente inicializada con led_init
  */
-void led_blink_colors_forever(led_strip_t *strip);
+void led_blink_colors_loop(led_strip_t *strip);
