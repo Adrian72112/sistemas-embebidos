@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/cmake_install.cmake",
+		"C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/my_lib_1/cmake_install.cmake",
+		"C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/parte_2_lib/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

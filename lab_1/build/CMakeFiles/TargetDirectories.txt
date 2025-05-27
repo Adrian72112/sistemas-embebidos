@@ -1,0 +1,14 @@
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/CMakeFiles/test_estudiantes.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/CMakeFiles/test_my_lib_1.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/CMakeFiles/mi_programa.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/CMakeFiles/test.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/CMakeFiles/edit_cache.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/CMakeFiles/rebuild_cache.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/my_lib_1/CMakeFiles/my_lib_1.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/my_lib_1/CMakeFiles/test.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/my_lib_1/CMakeFiles/edit_cache.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/my_lib_1/CMakeFiles/rebuild_cache.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/parte_2_lib/CMakeFiles/parte_2_lib.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/parte_2_lib/CMakeFiles/test.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/parte_2_lib/CMakeFiles/edit_cache.dir
+C:/Users/pierina borsieri/OneDrive/Documentos/GitHub/sistemas-embebidos/lab_1/build/components/parte_2_lib/CMakeFiles/rebuild_cache.dir
