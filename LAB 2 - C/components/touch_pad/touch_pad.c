@@ -1,3 +1,10 @@
+#include <stdio.h>
+#include "touch_pad.h"
+
+void func(void)
+{
+
+}
 #include "touch_pad.h"
 #include <stdio.h>
 #include <inttypes.h>
