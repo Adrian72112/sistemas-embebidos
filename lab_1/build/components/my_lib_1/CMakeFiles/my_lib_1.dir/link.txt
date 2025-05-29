@@ -1,2 +1,0 @@
-C:\MinGW\bin\ar.exe qc libmy_lib_1.a CMakeFiles/my_lib_1.dir/my_lib_1.c.obj
-C:\MinGW\bin\ranlib.exe libmy_lib_1.a
