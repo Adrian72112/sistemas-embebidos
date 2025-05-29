@@ -3,6 +3,3 @@
 cmake_minimum_required(VERSION 3.16)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(Laboratorio_2c)
-// filepath: c:\Users\Agustina\Escritorio\sistemas-embebidos\Laboratorio_2c\components\wifiap\CMakeLists.txt
-idf_component_register(SRCS "wifiap.c"
-                       INCLUDE_DIRS "include")
