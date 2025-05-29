@@ -2,14 +2,15 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "esp_log.h"
-
 #include "driver/touch_pad.h"
 #include "delay.h"
+#include "led.h"
+#include "esp_timer.h"
 
 #define TOUCH_BUTTON_NUM    6
-#define TOUCH_CHANGE_CONFIG 0
-
+#define TOUCH_THRESHOLD     60000  // ajustar según calibración
 static const char *TAG = "touch read";
+
 static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
     TOUCH_PAD_NUM1, // VOL_UP
     TOUCH_PAD_NUM2, // PLAY/PAUSE
@@ -19,26 +20,112 @@ static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
     TOUCH_PAD_NUM11 // NETWORK
 };
 
-/*
-  Read values sensed at all available touch pads.
- Print out values in a loop on a serial monitor.
- */
+// Estado global del LED
+static led_strip_t *s_strip = NULL;
+static uint8_t    s_brightness    = 128;  // 0–255
+static uint8_t    s_color_r       = 255;
+static uint8_t    s_color_g       = 255;
+static uint8_t    s_color_b       = 255;
+
+// Debounce muy básico (evitamos así lecturas repetidas)
+static uint32_t last_time[TOUCH_BUTTON_NUM] = {0};
+#define DEBOUNCE_MS 300
+
+// Llamar desde main, justo después de led_init():
+void tp_set_led_strip(led_strip_t *strip) {
+    s_strip = strip;
+}
+
 void tp_read(void)
 {
-    uint32_t touch_value;
+    if (!s_strip) {
+        ESP_LOGE(TAG, "tp_set_led_strip() NO fue llamado antes de tp_read()");
+        return;
+    }
 
-    /* Wait touch sensor init done */
+    uint32_t touch_value;
+    uint64_t now;
+
     delay_ms(100);
-    printf("Touch Sensor read, the output format is: \nTouchpad num:[raw data]\n\n");
+    printf("Touch Sensor read:\n");
 
     while (1) {
-        //TODO toca eliminar este for poner un switch case para cada boton y leer el touch_value{i} correspondiente y hacer cosas con el led
+        now = esp_timer_get_time() / 1000;
+
         for (int i = 0; i < TOUCH_BUTTON_NUM; i++) {
-            touch_pad_read_raw_data(button[i], &touch_value);    // read raw data.
-            printf("T%d: [%4"PRIu32"] ", button[i], touch_value);
+            touch_pad_read_raw_data(button[i], &touch_value);
+
+            // Si supera el umbral y pasó DEBOUNCE_MS desde la última vez...
+            if (touch_value > TOUCH_THRESHOLD &&
+                now - last_time[i] > DEBOUNCE_MS)
+            {
+                last_time[i] = now;
+
+                switch (button[i]) {
+                    case TOUCH_PAD_NUM1:  // VOL_UP
+                        s_brightness = (s_brightness + 20 > 255) ? 255 : s_brightness + 20;
+                        ESP_LOGI(TAG, "VOL_UP: brillo=%d", s_brightness);
+                        led_set_color(s_strip,
+                            (s_color_r * s_brightness) / 255,
+                            (s_color_g * s_brightness) / 255,
+                            (s_color_b * s_brightness) / 255
+                        );
+                        break;
+
+                    case TOUCH_PAD_NUM3:  // VOL_DOWN
+                        s_brightness = (s_brightness < 20) ? 0 : s_brightness - 20;
+                        ESP_LOGI(TAG, "VOL_DOWN: brillo=%d", s_brightness);
+                        led_set_color(s_strip,
+                            (s_color_r * s_brightness) / 255,
+                            (s_color_g * s_brightness) / 255,
+                            (s_color_b * s_brightness) / 255
+                        );
+                        break;
+
+                    case TOUCH_PAD_NUM2:  // PLAY/PAUSE
+                        ESP_LOGI(TAG, "PLAY/PAUSE: parpadeo");
+                        for (int j = 0; j < 2; j++) {
+                            led_off(s_strip);
+                            delay_ms(200);
+                            led_set_color(s_strip,
+                                (s_color_r * s_brightness) / 255,
+                                (s_color_g * s_brightness) / 255,
+                                (s_color_b * s_brightness) / 255
+                            );
+                            delay_ms(200);
+                        }
+                        break;
+
+                    case TOUCH_PAD_NUM5:  // RECORD -> rojo
+                        ESP_LOGI(TAG, "RECORD: color=Rojo");
+                        s_color_r = 255; s_color_g = 0; s_color_b = 0;
+                        led_set_color(s_strip,
+                            (255 * s_brightness) / 255, 0, 0
+                        );
+                        break;
+
+                    case TOUCH_PAD_NUM6:  // PHOTO -> verde
+                        ESP_LOGI(TAG, "PHOTO: color=Verde");
+                        s_color_r = 0; s_color_g = 255; s_color_b = 0;
+                        led_set_color(s_strip,
+                            0, (255 * s_brightness) / 255, 0
+                        );
+                        break;
+
+                    case TOUCH_PAD_NUM11: // NETWORK -> azul
+                        ESP_LOGI(TAG, "NETWORK: color=Azul");
+                        s_color_r = 0; s_color_g = 0; s_color_b = 255;
+                        led_set_color(s_strip,
+                            0, 0, (255 * s_brightness) / 255
+                        );
+                        break;
+
+                    default:
+                        break;
+                }
+            }
         }
-        printf("\n");
-        delay_ms(200);
+        delay_ms(100);
     }
 }
 
@@ -72,4 +159,14 @@ void configure_touch_pad(void)
     /* Enable touch sensor clock. Work mode is "timer trigger". */
     touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
     touch_pad_fsm_start();
+
+    //Inicializamos también las luces
+    // 1) Inicializa tu LED
+    led_strip_t *strip = NULL;
+    ESP_ERROR_CHECK( led_init(&strip) );
+    // Ponlo inicialmente apagado
+    led_off(strip);
+
+    // 3) Enlaza el strip al lector de botones
+    tp_set_led_strip(strip);
 }
