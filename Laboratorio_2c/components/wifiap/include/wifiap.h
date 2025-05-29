@@ -11,9 +11,9 @@
 /** Contraseña por defecto del punto de acceso */
 #define EXAMPLE_ESP_WIFI_PASS      "conpancasero"
 /** Canal WiFi por defecto (configurable en sdkconfig) */
-#define EXAMPLE_ESP_WIFI_CHANNEL   CONFIG_ESP_WIFI_CHANNEL
+#define EXAMPLE_ESP_WIFI_CHANNEL   4
 /** Número máximo de estaciones permitidas */
-#define EXAMPLE_MAX_STA_CONN       CONFIG_ESP_MAX_STA_CONN
+#define EXAMPLE_MAX_STA_CONN       5
 
 /** Etiqueta para logs del componente SoftAP */
 static const char *TAG = "wifi_softAP";
