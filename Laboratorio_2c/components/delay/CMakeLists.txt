@@ -1,2 +1,2 @@
-idf_component_register(SRCS "touch_pad.c"
+idf_component_register(SRCS "delay.c"
                     INCLUDE_DIRS "include")
