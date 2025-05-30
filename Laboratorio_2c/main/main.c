@@ -13,25 +13,26 @@
 #include "esp_netif.h"
 #include "esp_tls.h"
 #include "esp_check.h"
-
+#include "led.h"
 
 #define EXAMPLE_HTTP_QUERY_KEY_MAX_LEN  (64)
 #define POST_BUF_LEN 256
-
-/* A simple example that demonstrates how to create GET and POST
- * handlers for the web server.
- */
 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
 extern const uint8_t style_css_start[]  asm("_binary_style_css_start");
 extern const uint8_t style_css_end[]    asm("_binary_style_css_end");
 
+static uint8_t    s_brightness    = 128;
+static led_strip_t *s_strip = NULL;
 static const char *TAG = "example";
 
 // Handler para “/”
 static esp_err_t index_get_handler(httpd_req_t *req)
 {
+    led_set_color(s_strip,
+                            0, 0, 0
+                        );
     size_t len = index_html_end - index_html_start;
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, (const char*)index_html_start, len);
@@ -216,6 +217,9 @@ static esp_err_t http_post_handler(httpd_req_t *req)
         char *result;
         asprintf(&result, "%s%s", "Dato recibido: ", param_val);
         httpd_resp_sendstr(req, result);
+        led_set_color(s_strip,
+                            0, (255 * s_brightness) / 255, 0
+                        );
     }
     else
     {
@@ -264,6 +268,9 @@ static httpd_handle_t start_webserver(void)
 
 void app_main(void)
 {
+    led_strip_t *strip = NULL;
+    ESP_ERROR_CHECK( led_init(&strip) );
+    s_strip = strip;
     static httpd_handle_t server = NULL;
 
     ESP_ERROR_CHECK(nvs_flash_init());
