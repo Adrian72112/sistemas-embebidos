@@ -7,8 +7,8 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    const char* ssid     = "RedTese";
-    const char* password = "Tituscan2022";
+    const char* ssid     = "caliope";
+    const char* password = "sinlugar";
 
     ESP_LOGI("main", "Iniciando estación WiFi...");
     esp_err_t ret = wifi_init_station(ssid, password);

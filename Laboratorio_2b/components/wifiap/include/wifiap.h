@@ -15,8 +15,7 @@
 /** Número máximo de estaciones permitidas */
 #define EXAMPLE_MAX_STA_CONN       CONFIG_ESP_MAX_STA_CONN
 
-/** Etiqueta para logs del componente SoftAP */
-static const char *TAG = "wifi_softAP";
+
 
 /**
  * @brief Manejador de eventos del SoftAP.

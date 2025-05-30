@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "wifiap.h"
 
+/** Etiqueta para logs del componente SoftAP */
+static const char *TAG = "wifi_softAP";
+
 void init_nvs(void)
 {
     esp_err_t ret = nvs_flash_init();

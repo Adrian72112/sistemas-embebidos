@@ -9,7 +9,6 @@
  *       si se va a utilizar la funcionalidad de control de iluminación.
  */
 void configure_touch_pad(void);
-void tp_read(void);
 
 /**
  * @brief Bucle de lectura de valores de Touch Pad y control del LED.
@@ -21,4 +20,4 @@ void tp_read(void);
  *
  * @warning Función bloqueante que itera sin fin.
  */
-void tp_read(void);
+void tp_read(void);
