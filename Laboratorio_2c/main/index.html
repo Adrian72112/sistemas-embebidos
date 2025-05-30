@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ESP32-S2 Kaluga-1 TouchPad</title>
+  <link rel="stylesheet" href="/style.css" />
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const form   = document.getElementById('inputForm');
+  const result = document.getElementById('result');
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const value = document.getElementById('inputVal').value;
+    result.textContent = `You entered: ${value}`;
+
+    try {
+      // ① Construir URLSearchParams
+      const params = new URLSearchParams();
+      params.append('data_input', value);
+
+      // ② POST como application/x-www-form-urlencoded
+      const resp = await fetch('/enviar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString(),
+        credentials: 'omit'  // evita enviar cookies innecesarias
+      });
+      const text = await resp.text();
+      result.innerHTML = text;
+    } catch (err) {
+      console.error(err);
+      result.textContent = 'Error enviando datos';
+    }
+  });
+});
+</script>
+
+</head>
+<body>
+  <div class="container">
+    <h1>ESP32-S2 Kaluga-1 TouchPad</h1>
+    <form id="inputForm">
+      <label for="inputVal">Enter value:</label>
+      <input
+        type="text"
+        id="inputVal"
+        name="value"
+        placeholder="Type here"
+        required
+      />
+      <button type="submit">Send</button>
+    </form>
+    <div id="result"></div>
+  </div>
+</body>
+</html>

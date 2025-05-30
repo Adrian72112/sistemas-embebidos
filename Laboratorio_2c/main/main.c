@@ -16,105 +16,43 @@
 
 
 #define EXAMPLE_HTTP_QUERY_KEY_MAX_LEN  (64)
+#define POST_BUF_LEN 256
 
 /* A simple example that demonstrates how to create GET and POST
  * handlers for the web server.
  */
 
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
+extern const uint8_t style_css_start[]  asm("_binary_style_css_start");
+extern const uint8_t style_css_end[]    asm("_binary_style_css_end");
+
 static const char *TAG = "example";
 
-/* An HTTP GET handler */
-static esp_err_t hello_get_handler(httpd_req_t *req)
+// Handler para “/”
+static esp_err_t index_get_handler(httpd_req_t *req)
 {
-    char*  buf;
-    size_t buf_len;
-
-    /* Get header value string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        ESP_RETURN_ON_FALSE(buf, ESP_ERR_NO_MEM, TAG, "buffer alloc failed");
-        /* Copy null terminated value string into buffer */
-        if (httpd_req_get_hdr_value_str(req, "Host", buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found header => Host: %s", buf);
-        }
-        free(buf);
-    }
-
-    buf_len = httpd_req_get_hdr_value_len(req, "Test-Header-2") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        ESP_RETURN_ON_FALSE(buf, ESP_ERR_NO_MEM, TAG, "buffer alloc failed");
-        if (httpd_req_get_hdr_value_str(req, "Test-Header-2", buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found header => Test-Header-2: %s", buf);
-        }
-        free(buf);
-    }
-
-    buf_len = httpd_req_get_hdr_value_len(req, "Test-Header-1") + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        ESP_RETURN_ON_FALSE(buf, ESP_ERR_NO_MEM, TAG, "buffer alloc failed");
-        if (httpd_req_get_hdr_value_str(req, "Test-Header-1", buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found header => Test-Header-1: %s", buf);
-        }
-        free(buf);
-    }
-
-    /* Read URL query string length and allocate memory for length + 1,
-     * extra byte for null termination */
-    buf_len = httpd_req_get_url_query_len(req) + 1;
-    if (buf_len > 1) {
-        buf = malloc(buf_len);
-        ESP_RETURN_ON_FALSE(buf, ESP_ERR_NO_MEM, TAG, "buffer alloc failed");
-        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
-            ESP_LOGI(TAG, "Found URL query => %s", buf);
-            char param[EXAMPLE_HTTP_QUERY_KEY_MAX_LEN], dec_param[EXAMPLE_HTTP_QUERY_KEY_MAX_LEN] = {0};
-            /* Get value of expected key from query string */
-            if (httpd_query_key_value(buf, "query1", param, sizeof(param)) == ESP_OK) {
-                ESP_LOGI(TAG, "Found URL query parameter => query1=%s", param);
-                example_uri_decode(dec_param, param, strnlen(param, EXAMPLE_HTTP_QUERY_KEY_MAX_LEN));
-                ESP_LOGI(TAG, "Decoded query parameter => %s", dec_param);
-            }
-            if (httpd_query_key_value(buf, "query3", param, sizeof(param)) == ESP_OK) {
-                ESP_LOGI(TAG, "Found URL query parameter => query3=%s", param);
-                example_uri_decode(dec_param, param, strnlen(param, EXAMPLE_HTTP_QUERY_KEY_MAX_LEN));
-                ESP_LOGI(TAG, "Decoded query parameter => %s", dec_param);
-            }
-            if (httpd_query_key_value(buf, "query2", param, sizeof(param)) == ESP_OK) {
-                ESP_LOGI(TAG, "Found URL query parameter => query2=%s", param);
-                example_uri_decode(dec_param, param, strnlen(param, EXAMPLE_HTTP_QUERY_KEY_MAX_LEN));
-                ESP_LOGI(TAG, "Decoded query parameter => %s", dec_param);
-            }
-        }
-        free(buf);
-    }
-
-    /* Set some custom headers */
-    httpd_resp_set_hdr(req, "Custom-Header-1", "Custom-Value-1");
-    httpd_resp_set_hdr(req, "Custom-Header-2", "Custom-Value-2");
-
-    /* Send response with custom headers and body set as the
-     * string passed in user context*/
-    const char* resp_str = (const char*) req->user_ctx;
-    httpd_resp_send(req, resp_str, HTTPD_RESP_USE_STRLEN);
-
-    /* After sending the HTTP response the old HTTP request
-     * headers are lost. Check if HTTP request headers can be read now. */
-    if (httpd_req_get_hdr_value_len(req, "Host") == 0) {
-        ESP_LOGI(TAG, "Request headers lost");
-    }
-    return ESP_OK;
+    size_t len = index_html_end - index_html_start;
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, (const char*)index_html_start, len);
 }
-
-static const httpd_uri_t hello = {
-    .uri       = "/hello",
+static const httpd_uri_t index_uri = {
+    .uri       = "/",
     .method    = HTTP_GET,
-    .handler   = hello_get_handler,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
-    .user_ctx  = "Hello World!"
+    .handler   = index_get_handler,
+};
+
+// Handler para “/style.css”
+static esp_err_t style_get_handler(httpd_req_t *req)
+{
+    size_t len = style_css_end - style_css_start;
+    httpd_resp_set_type(req, "text/css");
+    return httpd_resp_send(req, (const char*)style_css_start, len);
+}
+static const httpd_uri_t style_uri = {
+    .uri       = "/style.css",
+    .method    = HTTP_GET,
+    .handler   = style_get_handler,
 };
 
 /* An HTTP POST handler */
@@ -230,7 +168,6 @@ static esp_err_t ctrl_put_handler(httpd_req_t *req)
     }
     else {
         ESP_LOGI(TAG, "Registering /hello and /echo URIs");
-        httpd_register_uri_handler(req->handle, &hello);
         httpd_register_uri_handler(req->handle, &echo);
         /* Unregister custom error handler */
         httpd_register_err_handler(req->handle, HTTPD_404_NOT_FOUND, NULL);
@@ -238,6 +175,53 @@ static esp_err_t ctrl_put_handler(httpd_req_t *req)
 
     /* Respond with empty body */
     httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+}
+
+static esp_err_t http_post_handler(httpd_req_t *req)
+{
+    char buf[POST_BUF_LEN + 1];
+    char param_val[POST_BUF_LEN + 1];
+    int ret = 0;
+    int remaining = req->content_len;
+ 
+    if (remaining == 0)
+    {
+        ESP_LOGW(TAG, "POST vacío");
+        httpd_resp_sendstr(req, "Error: POST vacío.");
+        return ESP_OK;
+    }
+ 
+    if (remaining > POST_BUF_LEN)
+    {
+        ESP_LOGE(TAG, "POST muy largo");
+        httpd_resp_send_err(req, 400, "Datos demasiado largos");
+        return ESP_FAIL;
+    }
+ 
+    ret = httpd_req_recv(req, buf, remaining);
+    if (ret <= 0)
+    {
+        if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+        {
+            httpd_resp_send_408(req);
+        }
+        return ESP_FAIL;
+    }
+    buf[ret] = '\0';
+ 
+    if (httpd_query_key_value(buf, "data_input", param_val, sizeof(param_val)) == ESP_OK)
+    {
+        ESP_LOGI(TAG, "Dato recibido: %s", param_val);
+        char *result;
+        asprintf(&result, "%s%s", "Dato recibido: ", param_val);
+        httpd_resp_sendstr(req, result);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "No encontramos data_input en el POST.");
+        httpd_resp_sendstr(req, "Error: No se encontró data_input.");
+    }
     return ESP_OK;
 }
 
@@ -260,10 +244,17 @@ static httpd_handle_t start_webserver(void)
     if (httpd_start(&server, &config) == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &hello);
+        httpd_register_uri_handler(server, &index_uri);
+        httpd_register_uri_handler(server, &style_uri);
         httpd_register_uri_handler(server, &echo);
         httpd_register_uri_handler(server, &ctrl);
         httpd_register_uri_handler(server, &any);
+
+        httpd_register_uri_handler(server, &(httpd_uri_t){
+                                               .uri = "/enviar",
+                                               .method = HTTP_POST,
+                                               .handler = http_post_handler,
+                                           });
         return server;
     }
 
