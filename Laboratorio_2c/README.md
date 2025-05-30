@@ -153,11 +153,3 @@ void app_main(void)
 
 ---
 
-## ✅ Conclusión
-
-Integramos control físico (LED) con web:
-
-* **GET /** → apaga LED
-* **POST /enviar** → enciende LED verde y retorna la confirmación.
-
-¡Parte C completada! 🎉
