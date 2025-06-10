@@ -1,5 +1,6 @@
 #include "led.h"
-#include "delay.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 esp_err_t led_init(led_strip_t **strip)
 {
@@ -19,21 +20,22 @@ void led_off(led_strip_t *strip)
 
 void led_blink_colors_loop(led_strip_t *strip)
 {
+    const TickType_t delay = pdMS_TO_TICKS(500);
     while (1)
     {
         led_set_color(strip, 255, 0, 0); // rojo
-        delay_ms(500);
+        vTaskDelay(delay);
         led_off(strip);
-        delay_ms(500);
+        vTaskDelay(delay);
 
         led_set_color(strip, 0, 255, 0); // verde
-        delay_ms(500);
+        vTaskDelay(delay);
         led_off(strip);
-        delay_ms(500);
+        vTaskDelay(delay);
 
         led_set_color(strip, 0, 0, 255); // azul
-        delay_ms(500);
+        vTaskDelay(delay);
         led_off(strip);
-        delay_ms(500);
+        vTaskDelay(delay);
     }
 }
