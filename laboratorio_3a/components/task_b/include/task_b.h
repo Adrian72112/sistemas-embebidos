@@ -2,9 +2,9 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
-/**
- * @brief Inicializa y lanza la tarea B
- * 
- * @param queue Cola de strings que representa comandos "color-tiempo"
- */
-void start_task_b(void);
+typedef struct {
+    char color[16];
+    int tiempo_ms;
+} color_command_t;
+
+void start_task_b(QueueHandle_t queue);
