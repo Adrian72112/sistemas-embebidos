@@ -1,5 +1,3 @@
-task_a:
-
 /**
  * @file task_a.c
  * @brief Tarea A: Parpadeo del LED RGB según el color actual
@@ -30,7 +28,7 @@ static led_strip_t *led_strip;
  * @param[in] pvParameters No se utiliza
  */
 static void task_a(void *pvParameters) {
-    const TickType_t delay = pdMS_TO_TICKS(500);
+    const TickType_t delay = pdMS_TO_TICKS(100);
     while (1) {
         color_t color = color_get();
 
