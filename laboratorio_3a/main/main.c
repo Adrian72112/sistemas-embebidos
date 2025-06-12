@@ -14,11 +14,14 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
+#include "freertos/queue.h"
 #include "led.h"
 #include "color.h"
 #include "task_a.h"
 #include "task_b.h"
 
+#define QUEUE_LENGTH 10
 // Declaración del puntero global al LED RGB
 led_strip_t *led_strip = NULL;
 
@@ -31,16 +34,28 @@ led_strip_t *led_strip = NULL;
  * @return int No retorna nunca. Si falla la inicialización, retorna -1.
  */
 void app_main(void) {
-    // Inicialización del LED
     if (led_init(&led_strip) != ESP_OK) {
         printf("Error al inicializar el LED\n");
         return;
     }
-    // Inicialización del módulo COLOR
+
     color_init();
-    // Inicio de las tareas del sistema
-    //start_task_a();
-    
-    start_task_b();
-    //start_task_c();
+
+    QueueHandle_t command_queue = xQueueCreate(QUEUE_LENGTH, sizeof(color_command_t));
+    if (command_queue == NULL) {
+        printf("Error al crear la cola\n");
+        return;
+    }
+
+    start_task_b(command_queue);
+    color_command_t command;
+
+    while (1) {
+        if (xQueueReceive(command_queue, &command, portMAX_DELAY)) {
+            ESP_LOGW("MAIN","Consumido de la cola -> Color: %s, Tiempo: %d ms\n", command.color, command.tiempo_ms);
+            vTaskDelay(pdMS_TO_TICKS(500));
+        }
+    }
+    // start_task_a(); // si ya tenés task_a lista
+    // start_task_c(command_queue); // cuando esté lista la C
 }
