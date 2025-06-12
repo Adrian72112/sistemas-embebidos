@@ -1,3 +1,5 @@
+task_a:
+
 /**
  * @file task_a.c
  * @brief Tarea A: Parpadeo del LED RGB según el color actual
