@@ -1,3 +1,4 @@
+
 /**
  * @file main.c
  * @brief Punto de entrada principal del programa
@@ -15,14 +16,11 @@
 #include "freertos/task.h"
 #include "led.h"
 #include "color.h"
+#include "task_a.h"
+#include "task_b.h"
 
 // Declaración del puntero global al LED RGB
 led_strip_t *led_strip = NULL;
-
-// Declaraciones de las funciones para iniciar tareas
-void start_task_a(void);
-void start_task_b(void);
-void start_task_c(void);
 
 /**
  * @brief Función principal del programa
@@ -38,21 +36,11 @@ void app_main(void) {
         printf("Error al inicializar el LED\n");
         return;
     }
-
     // Inicialización del módulo COLOR
     color_init();
-
     // Inicio de las tareas del sistema
-    start_task_a();
-    //start_task_b();
+    //start_task_a();
+    
+    start_task_b();
     //start_task_c();
-    while (1)
-    {
-        const TickType_t delay = pdMS_TO_TICKS(10000);
-        color_set(COLOR_BLUE);
-        vTaskDelay(delay);
-        
-        color_set(COLOR_RED);
-        vTaskDelay(delay);
-    }
 }
