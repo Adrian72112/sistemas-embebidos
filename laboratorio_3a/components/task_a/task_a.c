@@ -2,26 +2,28 @@
  * @file task_a.c
  * @brief Tarea A: Parpadeo del LED RGB según el color actual
  * 
- * Esta tarea lee periódicamente el valor actual del color mediante el módulo `color`
+ * Esta tarea lee periódicamente el valor actual del color mediante el módulo color
  * y enciende el LED con ese color. Luego lo apaga, generando un efecto de parpadeo.
  * 
- * El delay se realiza con `vTaskDelay()` para no bloquear el scheduler.
+ * El delay se realiza con vTaskDelay() para no bloquear el scheduler.
  */
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "led.h"
 #include "color.h"
+#include "led_strip.h"
+#include "esp_log.h"
 
-extern led_strip_t *led_strip; /**< Instancia global del LED RGB, inicializada en main.c */
+static led_strip_t *led_strip;
 
 /**
  * @brief Tarea que controla el parpadeo del LED RGB
  * 
  * Esta tarea se ejecuta en un bucle infinito, leyendo el color actual desde
- * el módulo `color` y haciendo parpadear el LED con ese color.
+ * el módulo color y haciendo parpadear el LED con ese color.
  * 
- * El parpadeo se realiza con un intervalo fijo usando `vTaskDelay()`.
+ * El parpadeo se realiza con un intervalo fijo usando vTaskDelay().
  * 
  * @param[in] pvParameters No se utiliza
  */
@@ -56,8 +58,17 @@ static void task_a(void *pvParameters) {
 /**
  * @brief Crea la tarea A que parpadea el LED
  * 
- * Esta función debe ser llamada desde `main.c` después de inicializar el LED y el módulo `color`.
+ * Esta función debe ser llamada desde main.c después de inicializar el LED y el módulo color.
  */
 void start_task_a() {
+    //Dejamos de escribir logs de la led en la consola, así no nos molesta al escribir
+    esp_log_level_set("ws2812", ESP_LOG_WARN);
+    if (led_init(&led_strip) != ESP_OK) {
+        printf("Error al inicializar el LED\n");
+        return;
+    }
+
+    color_init();
     xTaskCreate(task_a, "TaskA_LED", 2048, NULL, 1, NULL);
 }
+
