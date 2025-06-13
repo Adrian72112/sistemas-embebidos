@@ -1,3 +1,11 @@
+/**
+ * @file task_c.c
+ * @brief Implementación de la tarea encargada de procesar comandos de color con temporización
+ *
+ * Esta tarea recibe comandos desde una cola compartida con `task_b`, convierte el nombre del color
+ * a un valor `enum`, y crea un temporizador de FreeRTOS que, al vencer, actualiza el color mediante `color_set`.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include "task_c.h"
@@ -5,10 +13,16 @@
 #include "color.h"
 
 typedef struct {
-    color_t color;
+    color_t color;  ///< Color a establecer al vencer el temporizador
 } timer_data_t;
 
-// Esta función se llama cuando el timer vence
+/**
+ * @brief Callback ejecutado cuando el temporizador vence.
+ * 
+ * Cambia el color del sistema al especificado y libera la memoria asociada al temporizador.
+ *
+ * @param xTimer Temporizador que expiró.
+ */
 static void color_timeout_callback(TimerHandle_t xTimer) {
     timer_data_t *data = (timer_data_t *)pvTimerGetTimerID(xTimer);
     if (data != NULL) {
@@ -18,7 +32,12 @@ static void color_timeout_callback(TimerHandle_t xTimer) {
     }
 }
 
-// Devuelve el enum color_t desde un string
+/**
+ * @brief Convierte el nombre del color (string) al tipo `color_t`.
+ *
+ * @param color_name Cadena con el nombre del color ("rojo", "verde", "azul").
+ * @return color_t Valor correspondiente del enum o COLOR_NONE si no coincide.
+ */
 static color_t parse_color_name(const char *color_name) {
     if (strcmp(color_name, "rojo") == 0) return COLOR_RED;
     if (strcmp(color_name, "verde") == 0) return COLOR_GREEN;
@@ -26,6 +45,14 @@ static color_t parse_color_name(const char *color_name) {
     return COLOR_NONE;
 }
 
+/**
+ * @brief Función de la tarea `task_c`.
+ *
+ * Recibe comandos desde la cola, interpreta el color y duración, 
+ * y configura un temporizador de una sola ejecución que cambiará el color al finalizar.
+ *
+ * @param param Puntero a la cola de comandos (tipo `QueueHandle_t`).
+ */
 static void task_c(void *param) {
     QueueHandle_t queue = (QueueHandle_t)param;
     color_command_t command;
@@ -60,9 +87,17 @@ static void task_c(void *param) {
             }
         }
     }
+    
+    vTaskDelete(NULL);
 }
 
+/**
+ * @brief Inicializa la tarea `task_c`.
+ *
+ * Crea y lanza la tarea que procesa comandos y maneja timers de cambio de color.
+ *
+ * @param queue Cola desde donde se reciben los comandos (compartida con `task_b`).
+ */
 void start_task_c(QueueHandle_t queue) {
-    xTaskCreate(task_c, "task_c", 4096, (void *)queue, 5, NULL);
+    xTaskCreate(task_c, "task_c", 4096, (void *)queue, 1, NULL);
 }
-
