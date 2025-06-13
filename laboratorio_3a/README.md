@@ -1,6 +1,10 @@
+# SISTEMAS EMBEBIDOS
+
+Integrantes: Sofia Nicoletti - Pierina Borsieri - Agustina Bacigalupe - Adrián Tesore
+
 # Lab - Control de LEDs por UART en ESP32
 
-Este proyecto implementa un sistema de control de LEDs en un ESP32 mediante comandos recibidos por UART. Fue desarrollado como parte de un laboratorio de Sistemas Embebidos y demuestra el uso de FreeRTOS, UART, colas y tareas concurrentes.
+Este proyecto implementa un sistema de control de LEDs en un ESP32 mediante comandos recibidos por UART. Fue desarrollado como parte del lab 3 de Sistemas Embebidos y demuestra el uso de FreeRTOS, UART, colas y tareas concurrentes.
 
 ## 📋 Descripción general
 
@@ -75,8 +79,6 @@ Cada comando debe seguir este formato:
 
 Las entradas inválidas son descartadas y se muestra un mensaje por consola.
 
-> Puedes ajustar estos valores en `color.c` según tu hardware.
-
 ---
 
 ## ⚙️ Reintentos y cola
@@ -89,3 +91,4 @@ Cuando se reciben muchos comandos y la cola está llena:
 Podés aumentar el tamaño de la cola si esperás muchos comandos seguidos:
 ```c
 #define QUEUE_LENGTH 30  // por ejemplo
+
