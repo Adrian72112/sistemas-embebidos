@@ -14,12 +14,12 @@
 extern "C" {
 #endif
 
-// Maximum number of events in the circular buffer
-#define LOGGER_MAX_EVENTS 20
+// Configuration constants
+#define LOGGER_BUFFER_SIZE 20  // Number of events in circular buffer (as specified)
 
 // Maximum length for track name and event description
 #define LOGGER_MAX_TRACK_NAME_LEN 32
-#define LOGGER_MAX_EVENT_DESC_LEN 16
+#define LOGGER_MAX_EVENT_DESC_LEN 64
 
 // Event types
 typedef enum {
@@ -35,13 +35,13 @@ typedef enum {
 
 // Event structure
 typedef struct {
-    uint64_t timestamp;                                    // System timestamp in microseconds
+    int64_t timestamp;                                    // System timestamp in microseconds
     logger_event_type_t event_type;                       // Type of event
     char track_name[LOGGER_MAX_TRACK_NAME_LEN];           // Name of the track
     char description[LOGGER_MAX_EVENT_DESC_LEN];          // Additional description
     uint32_t track_duration_ms;                           // Track duration in milliseconds
     uint8_t volume_level;                                 // Volume level (0-100)
-} logger_event_t;
+} __attribute__((packed)) logger_event_t;
 
 // Logger statistics
 typedef struct {
@@ -120,10 +120,8 @@ esp_err_t logger_clear_events(void);
 
 /**
  * @brief Print all events to console (for debugging)
- * 
- * @return ESP_OK on success, error code otherwise
  */
-esp_err_t logger_print_events(void);
+void logger_print_events(void);
 
 /**
  * @brief Convert event type to string

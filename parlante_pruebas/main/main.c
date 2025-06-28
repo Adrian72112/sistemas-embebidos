@@ -57,28 +57,27 @@ static void audio_play_task(void *args)
     
     // Simple preload - just start writing
     esp_err_t ret = audio_controller_preload(data_ptr, track->size, &bytes_written);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to preload %s", track->name);
-        goto cleanup;
-    }
-    
-    if (bytes_written < track->size) {
-        data_ptr += bytes_written;
-        size_t remaining = track->size - bytes_written;
-        
-        while (!stop_audio_task && remaining > 0) {
-            ret = audio_controller_write(data_ptr, remaining, &bytes_written);
-            if (ret != ESP_OK || bytes_written == 0) {
-                ESP_LOGE(TAG, "Failed to write audio data for %s", track->name);
-                break;
-            }
-            
+    if (ret == ESP_OK) {
+        if (bytes_written < track->size) {
             data_ptr += bytes_written;
-            remaining -= bytes_written;
+            size_t remaining = track->size - bytes_written;
             
-            // Small delay to avoid overwhelming the I2S
-            vTaskDelay(pdMS_TO_TICKS(1));
+            while (!stop_audio_task && remaining > 0) {
+                ret = audio_controller_write(data_ptr, remaining, &bytes_written);
+                if (ret != ESP_OK || bytes_written == 0) {
+                    ESP_LOGE(TAG, "Failed to write audio data for %s", track->name);
+                    break;
+                }
+                
+                data_ptr += bytes_written;
+                remaining -= bytes_written;
+                
+                // Small delay to avoid overwhelming the I2S
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
         }
+    } else {
+        ESP_LOGE(TAG, "Failed to preload %s", track->name);
     }
     
     ESP_LOGI(TAG, "🎵 Audio task ended for: %s", track->name);
@@ -125,7 +124,7 @@ static esp_err_t play_track(const audio_track_t *track)
 
 void app_main(void)
 {
-    printf("ESP32-S2 Kaluga Kit - Audio Player (Refactored)\n");
+    printf("ESP32-S2 Kaluga Kit - Audio Player\n");
     printf("===============================================\n");
     
     // Initialize logger first
