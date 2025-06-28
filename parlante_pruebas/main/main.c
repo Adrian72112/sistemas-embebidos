@@ -22,6 +22,15 @@ extern const uint8_t music_pcm_end[]   asm("_binary_victory8bit_pcm_end");
 extern const uint8_t music2_pcm_start[] asm("_binary_8bit_pcm_start");
 extern const uint8_t music2_pcm_end[]   asm("_binary_8bit_pcm_end");
 
+extern const uint8_t music3_pcm_start[] asm("_binary_start_pcm_start");
+extern const uint8_t music3_pcm_end[]   asm("_binary_start_pcm_end");
+
+extern const uint8_t music4_pcm_start[] asm("_binary_whistle_pcm_start");
+extern const uint8_t music4_pcm_end[]   asm("_binary_whistle_pcm_end");
+
+extern const uint8_t music5_pcm_start[] asm("_binary_lose_pcm_start");
+extern const uint8_t music5_pcm_end[]   asm("_binary_lose_pcm_end");
+
 // Task control variables
 static TaskHandle_t audio_task_handle = NULL;
 static bool stop_audio_task = false;
@@ -137,6 +146,21 @@ void app_main(void)
             .data = music2_pcm_start,
             .size = music2_pcm_end - music2_pcm_start,
             .name = "8bit Classic"
+        },
+        {
+            .data = music3_pcm_start,
+            .size = music3_pcm_end - music3_pcm_start,
+            .name = "Game Start"
+        },
+        {
+            .data = music4_pcm_start,
+            .size = music4_pcm_end - music4_pcm_start,
+            .name = "Whistle"
+        },
+        {
+            .data = music5_pcm_start,
+            .size = music5_pcm_end - music5_pcm_start,
+            .name = "Lose"
         }
     };
     
