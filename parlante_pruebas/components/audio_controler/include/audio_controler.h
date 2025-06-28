@@ -26,8 +26,8 @@ typedef struct {
  * @brief Default audio controller configuration
  */
 #define AUDIO_CONTROLLER_DEFAULT_CONFIG() { \
-    .sample_rate = 16000, \
-    .volume = 50, \
+    .sample_rate = 8000, \
+    .volume = 60, \
     .microphone_enabled = false \
 }
 
@@ -47,7 +47,7 @@ esp_err_t audio_controller_init(const audio_controller_config_t *config);
 esp_err_t audio_controller_deinit(void);
 
 /**
- * @brief Play audio data
+ * @brief Play audio data once (blocking call)
  * 
  * @param data Pointer to audio data
  * @param size Size of audio data in bytes
@@ -56,14 +56,24 @@ esp_err_t audio_controller_deinit(void);
 esp_err_t audio_controller_play(const uint8_t *data, size_t size);
 
 /**
- * @brief Play audio data in loop
+ * @brief Write audio data to I2S (non-blocking, for tasks)
  * 
  * @param data Pointer to audio data
  * @param size Size of audio data in bytes
- * @param loop_delay_ms Delay between loops in milliseconds
+ * @param bytes_written Pointer to store bytes written
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t audio_controller_play_loop(const uint8_t *data, size_t size, uint32_t loop_delay_ms);
+esp_err_t audio_controller_write(const uint8_t *data, size_t size, size_t *bytes_written);
+
+/**
+ * @brief Preload audio data to I2S buffer
+ * 
+ * @param data Pointer to audio data
+ * @param size Size of audio data in bytes
+ * @param bytes_written Pointer to store bytes written
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t audio_controller_preload(const uint8_t *data, size_t size, size_t *bytes_written);
 
 /**
  * @brief Set volume level
@@ -72,13 +82,6 @@ esp_err_t audio_controller_play_loop(const uint8_t *data, size_t size, uint32_t 
  * @return esp_err_t ESP_OK on success
  */
 esp_err_t audio_controller_set_volume(uint8_t volume);
-
-/**
- * @brief Stop audio playback
- * 
- * @return esp_err_t ESP_OK on success
- */
-esp_err_t audio_controller_stop(void);
 
 /**
  * @brief Get TX channel handle (for advanced usage)

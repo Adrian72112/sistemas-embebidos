@@ -78,8 +78,7 @@ esp_err_t i2s_driver_write(i2s_chan_handle_t tx_handle, const uint8_t *data, siz
 
 esp_err_t i2s_driver_preload(i2s_chan_handle_t tx_handle, const uint8_t *data, size_t size, size_t *bytes_written)
 {
-    ESP_RETURN_ON_ERROR(i2s_channel_disable(tx_handle), TAG, "Failed to disable TX channel for preload");
-    ESP_RETURN_ON_ERROR(i2s_channel_preload_data(tx_handle, data, size, bytes_written), TAG, "Failed to preload data");
-    ESP_RETURN_ON_ERROR(i2s_channel_enable(tx_handle), TAG, "Failed to enable TX channel after preload");
-    return ESP_OK;
+    // Simplified preload - just write directly without disable/enable cycle
+    ESP_LOGI(TAG, "Preloading %zu bytes to I2S buffer", size);
+    return i2s_channel_write(tx_handle, data, size, bytes_written, portMAX_DELAY);
 }

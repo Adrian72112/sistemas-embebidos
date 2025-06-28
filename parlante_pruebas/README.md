@@ -1,13 +1,46 @@
-| Supported Targets | ESP32 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | --------- | -------- | -------- | -------- | -------- |
+# ESP32-S2 Kaluga Kit - Audio Player
 
-# I2S ES8311 Example
+Este proyecto implementa un reproductor de audio modular para ESP32-S2 Kaluga Kit usando I2S + ES8311 codec.
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+## Características
 
-In this example, you can choose music mode or echo mode in menuconfig. In music mode, the example will play a piece of music in 'canon.pcm', and in echo mode, you can hear what you said in earphone.
+- 🎵 **Reproductor de audio modular** con componente `audio_controller`
+- 🔀 **Alternancia automática** entre múltiples canciones cada 4 segundos
+- 🎛️ **Control de volumen** programático
+- 📁 **Archivos PCM optimizados** para ESP32-S2
+- 🏗️ **Arquitectura modular** fácil de extender
 
-## ES8311 brief
+## Estructura del Proyecto
+
+```
+parlante_pruebas/
+├── main/
+│   ├── main.c              # Aplicación principal
+│   └── CMakeLists.txt      # Configuración de build
+├── components/
+│   └── audio_controler/    # Componente modular de audio
+│       ├── include/
+│       │   ├── audio_controler.h    # API pública
+│       │   ├── audio_config.h       # Configuraciones
+│       │   ├── i2s_driver.h         # Driver I2S
+│       │   └── es8311_codec.h       # Driver ES8311
+│       ├── audio_controler.c        # Controlador principal
+│       ├── i2s_driver.c             # Implementación I2S
+│       ├── es8311_codec.c           # Implementación ES8311
+│       └── CMakeLists.txt
+└── audios/
+    ├── victory8bit.pcm     # Audio 1 (optimizado)
+    └── 8bit.pcm           # Audio 2 (optimizado)
+```
+
+## Hardware: ESP32-S2 Kaluga Kit
+
+### Pines utilizados:
+- **I2C** (ES8311 control): GPIO 7 (SCL), GPIO 8 (SDA)
+- **I2S** (Audio data): GPIO 12, 17, 18, 35, 46
+- **PA Control**: GPIO 10 (Power Amplifier)
+
+## ES8311 Codec
 
 ES8311 low power mono audio codec features:
 
@@ -161,3 +194,42 @@ The example have contained a piece of music in canon.pcm, if you want to play yo
     * Pull-up the PA_CTRL pin either by setting that GPIO to high or by connecting it to 3.3V with a jump wire should help.
 
 For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
+
+---
+
+## El **ES8311** es un codec de audio que convierte:
+- **Digital → Analógico** (DAC): Para reproducir audio en altavoces
+- **Analógico → Digital** (ADC): Para capturar audio del micrófono
+
+## Optimización de Audio
+
+Los archivos PCM están optimizados para ESP32-S2:
+- **Sample Rate**: 8kHz (vs 16kHz estándar)
+- **Channels**: Mono (vs Estéreo)
+- **Bit Depth**: 8-bit (vs 16-bit)
+- **Resultado**: ~75% menos espacio que PCM estándar
+
+### Comando de conversión usado:
+```bash
+ffmpeg -i input.mp3 -ar 8000 -ac 1 -f u8 output.pcm
+```
+
+## Funcionalidad
+
+### Modo Actual: Alternancia de Canciones
+- ▶️ Reproduce `victory8bit.pcm` por 4 segundos
+- 🔄 Cambia automáticamente a `8bit.pcm` por 4 segundos
+- 🔁 Ciclo continuo con transiciones suaves
+
+### API del Audio Controller
+
+```c
+// Inicializar
+audio_controller_config_t config = AUDIO_CONTROLLER_DEFAULT_CONFIG();
+audio_controller_init(&config);
+
+// Reproducir con loop
+audio_controller_play_loop(data, size, delay_ms);
+
+// Controlar volumen
+audio_controller_set_volume(60); // 0-100%
