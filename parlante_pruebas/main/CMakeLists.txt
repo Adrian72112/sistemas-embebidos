@@ -1,5 +1,5 @@
 idf_component_register(SRCS "main.c"
-                    PRIV_REQUIRES audio_controler
+                    PRIV_REQUIRES audio_controler logger
                     EMBED_FILES "../audios/victory8bit.pcm"
                                 "../audios/8bit.pcm"
                                 "../audios/start.pcm"

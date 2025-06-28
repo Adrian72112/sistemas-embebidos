@@ -12,6 +12,7 @@
 #include "esp_system.h"
 #include "esp_log.h"
 #include "audio_controler.h"
+#include "logger.h"
 
 static const char *TAG = "main";
 
@@ -51,6 +52,9 @@ static void audio_play_task(void *args)
     
     ESP_LOGI(TAG, "🎵 Audio task started for: %s", track->name);
     
+    // Log the play event
+    logger_log_event(LOGGER_EVENT_PLAY, track->name, "PCM", 0, 75);
+    
     // Simple preload - just start writing
     esp_err_t ret = audio_controller_preload(data_ptr, track->size, &bytes_written);
     if (ret != ESP_OK) {
@@ -77,8 +81,11 @@ static void audio_play_task(void *args)
         }
     }
     
-cleanup:
     ESP_LOGI(TAG, "🎵 Audio task ended for: %s", track->name);
+    
+    // Log the stop event
+    logger_log_event(LOGGER_EVENT_STOP, track->name, "PCM end", 0, 75);
+    
     audio_task_handle = NULL;
     vTaskDelete(NULL);
 }
@@ -121,15 +128,29 @@ void app_main(void)
     printf("ESP32-S2 Kaluga Kit - Audio Player (Refactored)\n");
     printf("===============================================\n");
     
+    // Initialize logger first
+    ESP_LOGI(TAG, "Initializing audio logger...");
+    esp_err_t ret = logger_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize logger: %s", esp_err_to_name(ret));
+        // Continue without logger - not critical
+    } else {
+        ESP_LOGI(TAG, "Audio logger initialized successfully");
+        
+        // Print existing events for debugging
+        logger_print_events();
+    }
+    
     // Configure audio controller
     audio_controller_config_t audio_config = AUDIO_CONTROLLER_DEFAULT_CONFIG();
     
     ESP_LOGI(TAG, "Initializing audio controller...");
     
     // Initialize audio controller
-    esp_err_t ret = audio_controller_init(&audio_config);
+    ret = audio_controller_init(&audio_config);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize audio controller: %s", esp_err_to_name(ret));
+        logger_deinit(); // Clean up logger
         return;
     }
     
@@ -171,6 +192,7 @@ void app_main(void)
         ESP_LOGI(TAG, "Track %d: %s (%zu bytes)", i, tracks[i].name, tracks[i].size);
         if (tracks[i].size == 0) {
             ESP_LOGE(TAG, "No audio data found for %s!", tracks[i].name);
+            logger_deinit(); // Clean up logger
             audio_controller_deinit();
             return;
         }
@@ -194,6 +216,10 @@ void app_main(void)
         
         // Stop current track
         ESP_LOGI(TAG, "🔄 Switching tracks...");
+        
+        // Log the next event
+        logger_log_event(LOGGER_EVENT_NEXT, tracks[current_track].name, "Auto switch", 2000, 75);
+        
         stop_audio_task = true;
         
         // Wait for task to stop
