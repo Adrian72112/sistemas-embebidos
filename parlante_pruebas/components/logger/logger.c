@@ -1,3 +1,12 @@
+/**
+ * @file logger.c
+ * @brief ESP32 Audio Event Logger Implementation
+ * 
+ * Implementation of a thread-safe audio event logger with SPIFFS persistence.
+ * Uses a circular ring buffer to store the last 20 events with automatic
+ * saving on each event and system shutdown.
+ */
+
 #include "logger.h"
 #include "esp_log.h"
 #include "esp_system.h"
@@ -11,12 +20,12 @@
 
 static const char *TAG = "LOGGER";
 
-// Variables globales
+// Global variables
 static bool g_logger_initialized = false;
 static logger_ring_buffer_t g_ring_buffer;
 static SemaphoreHandle_t g_ring_buffer_mutex;
 
-// Funciones auxiliares privadas
+// Private function declarations
 static void logger_ring_buffer_init(void);
 static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type);
 static esp_err_t logger_init_spiffs(void);
@@ -25,10 +34,10 @@ static esp_err_t logger_init_spiffs(void);
 static void logger_shutdown_handler(void)
 {
     if (g_logger_initialized) {
-        ESP_LOGI(TAG, "SHUTDOWN: Auto-saving ring buffer to SPIFFS...");
+        ESP_LOGI(TAG, "Auto-saving ring buffer on shutdown...");
         esp_err_t err = logger_save_to_file();
         if (err != ESP_OK) {
-            ESP_LOGE(TAG, "SHUTDOWN: Failed to save ring buffer: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG, "Failed to save ring buffer on shutdown: %s", esp_err_to_name(err));
         }
     }
 }
@@ -61,7 +70,6 @@ esp_err_t logger_init(void)
     g_logger_initialized = true;
 
     // Load ring buffer from SPIFFS
-    ESP_LOGI(TAG, "Loading ring buffer from SPIFFS...");
     err = logger_load_from_file();
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Failed to load ring buffer, starting fresh");
@@ -70,9 +78,8 @@ esp_err_t logger_init(void)
 
     // Register shutdown handler to auto-save on reset
     esp_register_shutdown_handler(&logger_shutdown_handler);
-    ESP_LOGI(TAG, "Shutdown handler registered for auto-save");
 
-    ESP_LOGI(TAG, "Logger initialized successfully with SPIFFS storage");
+    ESP_LOGI(TAG, "Logger initialized successfully (events: %" PRIu32 ")", g_ring_buffer.total_events);
     
     return ESP_OK;
 }
@@ -80,42 +87,31 @@ esp_err_t logger_init(void)
 esp_err_t logger_deinit(void)
 {
     if (!g_logger_initialized) {
-        ESP_LOGW(TAG, "Logger deinit called but not initialized");
         return ESP_OK;
     }
 
-    ESP_LOGI(TAG, "=== DEINITIALIZING LOGGER ===");
-    ESP_LOGI(TAG, "Final ring buffer state before save:");
-    ESP_LOGI(TAG, "  - Count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
+    ESP_LOGI(TAG, "Deinitializing logger...");
 
     // Save ring buffer to SPIFFS before deinitializing
-    ESP_LOGI(TAG, "Saving ring buffer to SPIFFS during deinit...");
     esp_err_t err = logger_save_to_file();
     if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to save ring buffer to SPIFFS during deinit: %s", esp_err_to_name(err));
-    } else {
-        ESP_LOGI(TAG, "Ring buffer saved successfully during deinit");
+        ESP_LOGW(TAG, "Failed to save ring buffer during deinit: %s", esp_err_to_name(err));
     }
 
     // Clean up mutex
     if (g_ring_buffer_mutex != NULL) {
         vSemaphoreDelete(g_ring_buffer_mutex);
         g_ring_buffer_mutex = NULL;
-        ESP_LOGI(TAG, "Ring buffer mutex deleted");
     }
 
     // Unregister shutdown handler
     esp_unregister_shutdown_handler(&logger_shutdown_handler);
-    ESP_LOGI(TAG, "Shutdown handler unregistered");
 
     // Deinitialize SPIFFS
     esp_vfs_spiffs_unregister(NULL);
-    ESP_LOGI(TAG, "SPIFFS unregistered");
 
     g_logger_initialized = false;
-    ESP_LOGI(TAG, "=== LOGGER DEINITIALIZED ===");
+    ESP_LOGI(TAG, "Logger deinitialized");
     
     return ESP_OK;
 }
@@ -139,16 +135,13 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
         return err;
     }
 
-    ESP_LOGI(TAG, "Event logged: %s (total events: %" PRIu32 ")", 
+    ESP_LOGI(TAG, "Event logged: %s (total: %" PRIu32 ")", 
              logger_event_type_to_string(event_type), g_ring_buffer.total_events);
 
-    // Save to SPIFFS after each event (for persistence)
-    ESP_LOGI(TAG, "Saving ring buffer to SPIFFS after event...");
+    // Save to SPIFFS after each event for persistence
     err = logger_save_to_file();
     if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to save ring buffer to SPIFFS: %s", esp_err_to_name(err));
-    } else {
-        ESP_LOGI(TAG, "Ring buffer saved successfully to SPIFFS");
+        ESP_LOGW(TAG, "Failed to save to SPIFFS: %s", esp_err_to_name(err));
     }
 
     return ESP_OK;
@@ -297,32 +290,14 @@ esp_err_t logger_get_event_by_index(uint8_t index, logger_event_t* event)
 esp_err_t logger_save_to_file(void)
 {
     if (!g_logger_initialized) {
-        ESP_LOGE(TAG, "DEBUG: save_to_file called but logger not initialized");
         return ESP_ERR_INVALID_STATE;
     }
-
-    ESP_LOGI(TAG, "DEBUG: Attempting to save ring buffer to file...");
 
     if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
         ESP_LOGE(TAG, "Failed to acquire mutex for file save");
         return ESP_ERR_TIMEOUT;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Mutex acquired, ring buffer state:");
-    ESP_LOGI(TAG, "  - Ring buffer size: %zu bytes", sizeof(logger_ring_buffer_t));
-    ESP_LOGI(TAG, "  - Events count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head index: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
-
-    if (g_ring_buffer.count > 0) {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer has %d events, showing first event:", g_ring_buffer.count);
-        ESP_LOGI(TAG, "  - Event[0] type: %d", g_ring_buffer.events[0].type);
-        ESP_LOGI(TAG, "  - Event[0] seq: %" PRIu32, g_ring_buffer.events[0].sequence_number);
-    } else {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer is empty, nothing to save");
-    }
-
-    ESP_LOGI(TAG, "DEBUG: Opening file for writing: %s", LOGGER_FILE_PATH);
     FILE *file = fopen(LOGGER_FILE_PATH, "wb");
     if (file == NULL) {
         ESP_LOGE(TAG, "Failed to open file for writing: %s", LOGGER_FILE_PATH);
@@ -330,11 +305,8 @@ esp_err_t logger_save_to_file(void)
         return ESP_ERR_NOT_FOUND;
     }
 
-    ESP_LOGI(TAG, "DEBUG: File opened successfully, writing %zu bytes...", sizeof(logger_ring_buffer_t));
     size_t written = fwrite(&g_ring_buffer, sizeof(logger_ring_buffer_t), 1, file);
     fclose(file);
-
-    ESP_LOGI(TAG, "DEBUG: Write operation completed. Items written: %zu (expected: 1)", written);
 
     if (written != 1) {
         ESP_LOGE(TAG, "Failed to write ring buffer to file");
@@ -342,7 +314,6 @@ esp_err_t logger_save_to_file(void)
         return ESP_FAIL;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Ring buffer saved successfully to SPIFFS!");
     xSemaphoreGive(g_ring_buffer_mutex);
     return ESP_OK;
 }
@@ -350,53 +321,32 @@ esp_err_t logger_save_to_file(void)
 esp_err_t logger_load_from_file(void)
 {
     if (!g_logger_initialized) {
-        ESP_LOGE(TAG, "DEBUG: load_from_file called but logger not initialized");
         return ESP_ERR_INVALID_STATE;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Attempting to load ring buffer from SPIFFS file: %s", LOGGER_FILE_PATH);
-
     FILE *file = fopen(LOGGER_FILE_PATH, "rb");
     if (file == NULL) {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer file not found (first run), initializing empty");
+        // File not found - first run, initialize empty
         logger_ring_buffer_init();
         return ESP_OK;
     }
 
-    ESP_LOGI(TAG, "DEBUG: File opened successfully, reading %zu bytes...", sizeof(logger_ring_buffer_t));
     size_t read = fread(&g_ring_buffer, sizeof(logger_ring_buffer_t), 1, file);
     fclose(file);
 
-    ESP_LOGI(TAG, "DEBUG: Read operation completed. Items read: %zu (expected: 1)", read);
-
     if (read != 1) {
         ESP_LOGE(TAG, "Failed to read ring buffer from file");
-        ESP_LOGI(TAG, "Initializing empty ring buffer due to read error");
         logger_ring_buffer_init();
         return ESP_FAIL;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Ring buffer loaded from SPIFFS successfully!");
-    ESP_LOGI(TAG, "DEBUG: Loaded ring buffer state:");
-    ESP_LOGI(TAG, "  - Events count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head index: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
-
-    if (g_ring_buffer.count > 0) {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer has %d events, showing first event:", g_ring_buffer.count);
-        ESP_LOGI(TAG, "  - Event[0] type: %d", g_ring_buffer.events[0].type);
-        ESP_LOGI(TAG, "  - Event[0] seq: %" PRIu32, g_ring_buffer.events[0].sequence_number);
-    }
-
-    // Validar datos cargados
+    // Validate loaded data
     if (g_ring_buffer.count > LOGGER_RING_BUFFER_SIZE) {
         ESP_LOGW(TAG, "Invalid count %d, resetting ring buffer", g_ring_buffer.count);
         logger_ring_buffer_init();
     } else if (g_ring_buffer.head >= LOGGER_RING_BUFFER_SIZE) {
         ESP_LOGW(TAG, "Invalid head %d, resetting ring buffer", g_ring_buffer.head);
         logger_ring_buffer_init();
-    } else {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer data validation passed");
     }
 
     return ESP_OK;
@@ -414,8 +364,6 @@ static void logger_ring_buffer_init(void)
 
 static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
 {
-    ESP_LOGI(TAG, "DEBUG: Adding event to ring buffer: %s", logger_event_type_to_string(event_type));
-    
     if (g_ring_buffer_mutex == NULL) {
         ESP_LOGE(TAG, "Ring buffer mutex not initialized");
         return ESP_ERR_INVALID_STATE;
@@ -426,23 +374,13 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
         return ESP_ERR_TIMEOUT;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Ring buffer state before adding event:");
-    ESP_LOGI(TAG, "  - Count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
-
-    // Crear nuevo evento
+    // Create new event
     logger_event_t new_event;
     new_event.type = event_type;
     new_event.timestamp = esp_timer_get_time();
     new_event.sequence_number = ++g_ring_buffer.total_events;
 
-    ESP_LOGI(TAG, "DEBUG: New event created:");
-    ESP_LOGI(TAG, "  - Type: %d", new_event.type);
-    ESP_LOGI(TAG, "  - Timestamp: %" PRIu64, new_event.timestamp);
-    ESP_LOGI(TAG, "  - Sequence: %" PRIu32, new_event.sequence_number);
-
-    // Agregar al ring buffer (circular)
+    // Add to ring buffer (circular)
     g_ring_buffer.events[g_ring_buffer.head] = new_event;
     g_ring_buffer.head = (g_ring_buffer.head + 1) % LOGGER_RING_BUFFER_SIZE;
     
@@ -450,24 +388,14 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
         g_ring_buffer.count++;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Ring buffer state after adding event:");
-    ESP_LOGI(TAG, "  - Count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
-
     xSemaphoreGive(g_ring_buffer_mutex);
-    
-    ESP_LOGI(TAG, "Ring buffer event added: %s (seq: %" PRIu32 ", count: %d)", 
-             logger_event_type_to_string(event_type), 
-             new_event.sequence_number, 
-             g_ring_buffer.count);
     
     return ESP_OK;
 }
 
 static esp_err_t logger_init_spiffs(void)
 {
-    ESP_LOGI(TAG, "DEBUG: Initializing SPIFFS...");
+    ESP_LOGI(TAG, "Initializing SPIFFS...");
 
     esp_vfs_spiffs_conf_t conf = {
         .base_path = "/spiffs",
@@ -475,12 +403,6 @@ static esp_err_t logger_init_spiffs(void)
         .max_files = 5,
         .format_if_mount_failed = true
     };
-
-    ESP_LOGI(TAG, "DEBUG: SPIFFS config:");
-    ESP_LOGI(TAG, "  - Base path: %s", conf.base_path);
-    ESP_LOGI(TAG, "  - Partition label: %s", conf.partition_label ? conf.partition_label : "NULL (default)");
-    ESP_LOGI(TAG, "  - Max files: %d", (int)conf.max_files);
-    ESP_LOGI(TAG, "  - Format if mount failed: %s", conf.format_if_mount_failed ? "YES" : "NO");
 
     esp_err_t ret = esp_vfs_spiffs_register(&conf);
 
@@ -495,39 +417,13 @@ static esp_err_t logger_init_spiffs(void)
         return ret;
     }
 
-    ESP_LOGI(TAG, "DEBUG: SPIFFS mounted successfully, checking partition info...");
-
     size_t total = 0, used = 0;
     ret = esp_spiffs_info(NULL, &total, &used);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
     } else {
-        ESP_LOGI(TAG, "DEBUG: SPIFFS partition size: total: %d bytes, used: %d bytes, free: %d bytes", 
-                 (int)total, (int)used, (int)(total - used));
+        ESP_LOGI(TAG, "SPIFFS: total %d bytes, used %d bytes", (int)total, (int)used);
     }
 
-    // Test escribir un archivo simple para verificar que SPIFFS funciona
-    ESP_LOGI(TAG, "DEBUG: Testing SPIFFS write/read...");
-    FILE *test_file = fopen("/spiffs/test.txt", "w");
-    if (test_file != NULL) {
-        fprintf(test_file, "test");
-        fclose(test_file);
-        ESP_LOGI(TAG, "DEBUG: Test file written successfully");
-        
-        // Leer de vuelta
-        test_file = fopen("/spiffs/test.txt", "r");
-        if (test_file != NULL) {
-            char test_data[10];
-            fgets(test_data, sizeof(test_data), test_file);
-            fclose(test_file);
-            ESP_LOGI(TAG, "DEBUG: Test file read successfully: %s", test_data);
-        } else {
-            ESP_LOGW(TAG, "DEBUG: Could not read test file");
-        }
-    } else {
-        ESP_LOGW(TAG, "DEBUG: Could not create test file");
-    }
-
-    ESP_LOGI(TAG, "DEBUG: SPIFFS initialized successfully");
     return ESP_OK;
 }
