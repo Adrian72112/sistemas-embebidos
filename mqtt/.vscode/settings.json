@@ -4,5 +4,11 @@
   "idf.toolsPathWin": "C:\\Users\\adro\\.espressif",
   "idf.pythonInstallPath": "C:\\Users\\adro\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
   "idf.portWin": "COM8",
-  "idf.flashType": "UART"
+  "idf.flashType": "UART",
+  "idf.openOcdConfigs": [
+    "board/esp32s2-kaluga-1.cfg"
+  ],
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s2"
+  }
 }

@@ -21,7 +21,6 @@
 
 static const char *TAG = "wifi_connection";
 
-#if CONFIG_CONNECT_IPV6
 /* types of ipv6 addresses to be displayed on ipv6 events */
 const char *ipv6_addr_types_to_str[6] = {
     "ESP_IP6_ADDR_IS_UNKNOWN",
@@ -31,7 +30,6 @@ const char *ipv6_addr_types_to_str[6] = {
     "ESP_IP6_ADDR_IS_UNIQUE_LOCAL",
     "ESP_IP6_ADDR_IS_IPV4_MAPPED_IPV6"
 };
-#endif
 
 /**
  * @brief Checks the netif description if it contains specified prefix.
@@ -61,20 +59,16 @@ static esp_err_t print_all_ips_tcpip(void* ctx)
     while ((netif = esp_netif_next_unsafe(netif)) != NULL) {
         if (is_our_netif(prefix, netif)) {
             ESP_LOGI(TAG, "Connected to %s", esp_netif_get_desc(netif));
-#if CONFIG_CONNECT_IPV4
             esp_netif_ip_info_t ip;
             ESP_ERROR_CHECK(esp_netif_get_ip_info(netif, &ip));
 
             ESP_LOGI(TAG, "- IPv4 address: " IPSTR ",", IP2STR(&ip.ip));
-#endif
-#if CONFIG_CONNECT_IPV6
             esp_ip6_addr_t ip6[MAX_IP6_ADDRS_PER_NETIF];
             int ip6_addrs = esp_netif_get_all_ip6(netif, ip6);
             for (int j = 0; j < ip6_addrs; ++j) {
                 esp_ip6_addr_type_t ipv6_type = esp_netif_ip6_get_addr_type(&(ip6[j]));
                 ESP_LOGI(TAG, "- IPv6 address: " IPV6STR ", type: %s", IPV62STR(ip6[j]), ipv6_addr_types_to_str[ipv6_type]);
             }
-#endif
         }
     }
     return ESP_OK;

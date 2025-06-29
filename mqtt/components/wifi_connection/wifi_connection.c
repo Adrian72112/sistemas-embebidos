@@ -13,9 +13,7 @@
 static const char *TAG = "wifi_connection";
 static esp_netif_t *s_wifi_sta_netif = NULL;
 static SemaphoreHandle_t s_semph_get_ip_addrs = NULL;
-#if CONFIG_CONNECT_IPV6
 static SemaphoreHandle_t s_semph_get_ip6_addrs = NULL;
-#endif
 
 static int s_retry_num = 0;
 
@@ -23,17 +21,15 @@ static void handler_on_wifi_disconnect(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
 {
     s_retry_num++;
-    if (s_retry_num > CONFIG_WIFI_CONN_MAX_RETRY) {
+    if (s_retry_num > 6) {
         ESP_LOGI(TAG, "WiFi Connect failed %d times, stop reconnect.", s_retry_num);
         /* let wifi_sta_do_connect() return */
         if (s_semph_get_ip_addrs) {
             xSemaphoreGive(s_semph_get_ip_addrs);
         }
-#if CONFIG_CONNECT_IPV6
         if (s_semph_get_ip6_addrs) {
             xSemaphoreGive(s_semph_get_ip6_addrs);
         }
-#endif
         wifi_sta_do_disconnect();
         return;
     }
@@ -53,9 +49,7 @@ static void handler_on_wifi_disconnect(void *arg, esp_event_base_t event_base,
 static void handler_on_wifi_connect(void *esp_netif, esp_event_base_t event_base,
                             int32_t event_id, void *event_data)
 {
-#if CONFIG_CONNECT_IPV6
     esp_netif_create_ip6_linklocal(esp_netif);
-#endif // CONFIG_CONNECT_IPV6
 }
 
 static void handler_on_sta_got_ip(void *arg, esp_event_base_t event_base,
@@ -74,7 +68,6 @@ static void handler_on_sta_got_ip(void *arg, esp_event_base_t event_base,
     }
 }
 
-#if CONFIG_CONNECT_IPV6
 static void handler_on_sta_got_ipv6(void *arg, esp_event_base_t event_base,
                         int32_t event_id, void *event_data)
 {
@@ -94,7 +87,6 @@ static void handler_on_sta_got_ipv6(void *arg, esp_event_base_t event_base,
         }
     }
 }
-#endif // CONFIG_CONNECT_IPV6
 
 void wifi_start(void)
 {
@@ -132,21 +124,18 @@ esp_err_t wifi_sta_do_connect(wifi_config_t wifi_config, bool wait)
         if (s_semph_get_ip_addrs == NULL) {
             return ESP_ERR_NO_MEM;
         }
-#if CONFIG_CONNECT_IPV6
+
         s_semph_get_ip6_addrs = xSemaphoreCreateBinary();
         if (s_semph_get_ip6_addrs == NULL) {
             vSemaphoreDelete(s_semph_get_ip_addrs);
             return ESP_ERR_NO_MEM;
         }
-#endif
     }
     s_retry_num = 0;
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &handler_on_wifi_disconnect, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &handler_on_sta_got_ip, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_CONNECTED, &handler_on_wifi_connect, s_wifi_sta_netif));
-#if CONFIG_CONNECT_IPV6
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_GOT_IP6, &handler_on_sta_got_ipv6, NULL));
-#endif
 
     ESP_LOGI(TAG, "Connecting to %s...", wifi_config.sta.ssid);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
@@ -157,13 +146,9 @@ esp_err_t wifi_sta_do_connect(wifi_config_t wifi_config, bool wait)
     }
     if (wait) {
         ESP_LOGI(TAG, "Waiting for IP(s)");
-#if CONFIG_CONNECT_IPV4
         xSemaphoreTake(s_semph_get_ip_addrs, portMAX_DELAY);
-#endif
-#if CONFIG_CONNECT_IPV6
         xSemaphoreTake(s_semph_get_ip6_addrs, portMAX_DELAY);
-#endif
-        if (s_retry_num > CONFIG_WIFI_CONN_MAX_RETRY) {
+        if (s_retry_num > 6) {
             return ESP_FAIL;
         }
     }
@@ -175,17 +160,13 @@ esp_err_t wifi_sta_do_disconnect(void)
     ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &handler_on_wifi_disconnect));
     ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &handler_on_sta_got_ip));
     ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_CONNECTED, &handler_on_wifi_connect));
-#if CONFIG_CONNECT_IPV6
     ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT, IP_EVENT_GOT_IP6, &handler_on_sta_got_ipv6));
-#endif
     if (s_semph_get_ip_addrs) {
         vSemaphoreDelete(s_semph_get_ip_addrs);
     }
-#if CONFIG_CONNECT_IPV6
     if (s_semph_get_ip6_addrs) {
         vSemaphoreDelete(s_semph_get_ip6_addrs);
     }
-#endif
     return esp_wifi_disconnect();
 }
 
