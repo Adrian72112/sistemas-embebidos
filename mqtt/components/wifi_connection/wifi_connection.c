@@ -205,7 +205,7 @@ esp_err_t wifi_connect_to_ap(void)
             .password = "mvn5ts4k.",
             .scan_method = WIFI_SCAN_METHOD,
             .sort_method = WIFI_CONNECT_AP_SORT_METHOD,
-            .threshold.rssi = CONFIG_WIFI_SCAN_RSSI_THRESHOLD,
+            .threshold.rssi = -127,
             .threshold.authmode = WIFI_SCAN_AUTH_MODE_THRESHOLD,
         },
     };
