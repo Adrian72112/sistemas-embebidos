@@ -1,8 +1,3 @@
-/*
- * Audio Logger Component
- * Logs playback events to non-volatile storage (NVS) using a circular buffer
- */
-
 #ifndef LOGGER_H
 #define LOGGER_H
 
@@ -14,122 +9,71 @@
 extern "C" {
 #endif
 
-// Configuration constants
-#define LOGGER_BUFFER_SIZE 20  // Number of events in circular buffer (as specified)
+#define LOGGER_BUFFER_SIZE 20
+#define LOGGER_NVS_NAMESPACE "logger_storage"
+#define LOGGER_NVS_KEY_COUNTER "event_counter"
 
-// Maximum length for track name and event description
-#define LOGGER_MAX_TRACK_NAME_LEN 32
-#define LOGGER_MAX_EVENT_DESC_LEN 64
-
-// Event types
+/**
+ * @brief Tipos de eventos de reproducción
+ */
 typedef enum {
     LOGGER_EVENT_PLAY = 0,
     LOGGER_EVENT_PAUSE,
-    LOGGER_EVENT_STOP,
     LOGGER_EVENT_NEXT,
     LOGGER_EVENT_PREVIOUS,
-    LOGGER_EVENT_VOLUME_UP,
-    LOGGER_EVENT_VOLUME_DOWN,
-    LOGGER_EVENT_MAX
+    LOGGER_EVENT_STOP
 } logger_event_type_t;
 
-// Event structure
+/**
+ * @brief Estructura para almacenar un evento de reproducción
+ */
 typedef struct {
-    int64_t timestamp;                                    // System timestamp in microseconds
-    logger_event_type_t event_type;                       // Type of event
-    char track_name[LOGGER_MAX_TRACK_NAME_LEN];           // Name of the track
-    char description[LOGGER_MAX_EVENT_DESC_LEN];          // Additional description
-    uint32_t track_duration_ms;                           // Track duration in milliseconds
-    uint8_t volume_level;                                 // Volume level (0-100)
-} __attribute__((packed)) logger_event_t;
-
-// Logger statistics
-typedef struct {
-    uint32_t total_events;        // Total events logged since initialization
-    uint32_t events_in_buffer;    // Current number of events in buffer
-    uint32_t buffer_overruns;     // Number of times buffer was overrun
-    bool nvs_initialized;         // NVS initialization status
-} logger_stats_t;
+    logger_event_type_t type;           // Tipo de evento
+    uint64_t timestamp;                 // Timestamp del evento (microsegundos desde boot)
+    uint32_t sequence_number;           // Número de secuencia del evento
+} logger_event_t;
 
 /**
- * @brief Initialize the logger component
+ * @brief Inicializa el sistema de logger
  * 
- * This function initializes the NVS partition and loads existing events
- * from non-volatile storage into the circular buffer.
- * 
- * @return ESP_OK on success, error code otherwise
+ * @return ESP_OK si la inicialización fue exitosa
  */
 esp_err_t logger_init(void);
 
 /**
- * @brief Deinitialize the logger component
+ * @brief Deinicializa el sistema de logger
  * 
- * Saves current buffer to NVS and cleans up resources.
- * 
- * @return ESP_OK on success, error code otherwise
+ * @return ESP_OK si la deinicialización fue exitosa
  */
 esp_err_t logger_deinit(void);
 
 /**
- * @brief Log a playback event
+ * @brief Registra un evento de reproducción
  * 
- * @param event_type Type of event to log
- * @param track_name Name of the track (can be NULL)
- * @param description Additional description (can be NULL)
- * @param track_duration_ms Track duration in milliseconds (0 if unknown)
- * @param volume_level Current volume level (0-100)
- * 
- * @return ESP_OK on success, error code otherwise
+ * @param event_type Tipo de evento a registrar
+ * @return ESP_OK si el evento fue registrado exitosamente
  */
-esp_err_t logger_log_event(logger_event_type_t event_type, 
-                          const char *track_name,
-                          const char *description,
-                          uint32_t track_duration_ms,
-                          uint8_t volume_level);
+esp_err_t logger_log_event(logger_event_type_t event_type);
 
 /**
- * @brief Get the last N events from the logger
+ * @brief Obtiene el contador de eventos actual
  * 
- * @param events Array to store the events
- * @param max_events Maximum number of events to retrieve
- * @param num_events_returned Pointer to store the actual number of events returned
- * 
- * @return ESP_OK on success, error code otherwise
+ * @return Número total de eventos registrados
  */
-esp_err_t logger_get_events(logger_event_t *events, 
-                           uint32_t max_events, 
-                           uint32_t *num_events_returned);
+uint32_t logger_get_event_count(void);
 
 /**
- * @brief Get logger statistics
+ * @brief Convierte un tipo de evento a string
  * 
- * @param stats Pointer to store the statistics
- * 
- * @return ESP_OK on success, error code otherwise
- */
-esp_err_t logger_get_stats(logger_stats_t *stats);
-
-/**
- * @brief Clear all events from the logger
- * 
- * This function clears both the in-memory buffer and the NVS storage.
- * 
- * @return ESP_OK on success, error code otherwise
- */
-esp_err_t logger_clear_events(void);
-
-/**
- * @brief Print all events to console (for debugging)
- */
-void logger_print_events(void);
-
-/**
- * @brief Convert event type to string
- * 
- * @param event_type Event type to convert
- * @return String representation of the event type
+ * @param event_type Tipo de evento
+ * @return String representando el tipo de evento
  */
 const char* logger_event_type_to_string(logger_event_type_t event_type);
+
+/**
+ * @brief Imprime información del logger
+ */
+void logger_print_info(void);
 
 #ifdef __cplusplus
 }

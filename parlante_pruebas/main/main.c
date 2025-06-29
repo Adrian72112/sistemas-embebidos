@@ -53,7 +53,7 @@ static void audio_play_task(void *args)
     ESP_LOGI(TAG, "🎵 Audio task started for: %s", track->name);
     
     // Log the play event
-    logger_log_event(LOGGER_EVENT_PLAY, track->name, "PCM", 0, 75);
+    logger_log_event(LOGGER_EVENT_PLAY);
     
     // Simple preload - just start writing
     esp_err_t ret = audio_controller_preload(data_ptr, track->size, &bytes_written);
@@ -83,7 +83,7 @@ static void audio_play_task(void *args)
     ESP_LOGI(TAG, "🎵 Audio task ended for: %s", track->name);
     
     // Log the stop event
-    logger_log_event(LOGGER_EVENT_STOP, track->name, "PCM end", 0, 75);
+    logger_log_event(LOGGER_EVENT_STOP);
     
     audio_task_handle = NULL;
     vTaskDelete(NULL);
@@ -132,12 +132,15 @@ void app_main(void)
     esp_err_t ret = logger_init();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize logger: %s", esp_err_to_name(ret));
-        // Continue without logger - not critical
-    } else {
+    }
+    
+    if (ret == ESP_OK) {
         ESP_LOGI(TAG, "Audio logger initialized successfully");
         
-        // Print existing events for debugging
-        logger_print_events();
+        // Print logger info
+        logger_print_info();
+    } else {
+        ESP_LOGW(TAG, "Continuing without logger");
     }
     
     // Configure audio controller
@@ -217,7 +220,7 @@ void app_main(void)
         ESP_LOGI(TAG, "🔄 Switching tracks...");
         
         // Log the next event
-        logger_log_event(LOGGER_EVENT_NEXT, tracks[current_track].name, "Auto switch", 2000, 75);
+        logger_log_event(LOGGER_EVENT_NEXT);
         
         stop_audio_task = true;
         
