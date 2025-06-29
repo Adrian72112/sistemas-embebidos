@@ -24,7 +24,7 @@ static const char *TAG = "LOGGER";
 
 // Configuración de la tarea de guardado
 #define LOGGER_SAVE_TASK_STACK_SIZE     4096
-#define LOGGER_SAVE_TASK_PRIORITY       1        // Baja prioridad
+#define LOGGER_SAVE_TASK_PRIORITY       10        // Baja prioridad
 #define LOGGER_SAVE_QUEUE_SIZE          10       // Cola para eventos de guardado
 #define LOGGER_SAVE_TASK_NAME           "logger_save"
 
@@ -45,7 +45,6 @@ static QueueHandle_t g_save_queue = NULL;
 static void logger_ring_buffer_init(void);
 static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type);
 static esp_err_t logger_init_spiffs(void);
-static void logger_trim_total_events_if_needed(void);
 static void logger_save_task(void *pvParameters);
 static esp_err_t logger_create_save_task(void);
 static esp_err_t logger_destroy_save_task(void);
@@ -181,9 +180,6 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
              g_ring_buffer.count, 
              LOGGER_RING_BUFFER_SIZE,
              g_ring_buffer.total_events);
-
-    // Trim total events counter periodically to prevent overflow
-    logger_trim_total_events_if_needed();
 
     // Request async save to SPIFFS (non-blocking)
     logger_request_save_async();
@@ -490,9 +486,6 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
         g_ring_buffer.count++;
     }
 
-    // Trim the total events counter if it gets too large
-    logger_trim_total_events_if_needed();
-
     xSemaphoreGive(g_ring_buffer_mutex);
     
     return ESP_OK;
@@ -531,33 +524,6 @@ static esp_err_t logger_init_spiffs(void)
     }
 
     return ESP_OK;
-}
-
-// Helper function to trim total events counter when it gets too large
-static void logger_trim_total_events_if_needed(void)
-{
-    // Reset total_events counter when it gets too large to prevent overflow
-    // This doesn't affect the actual stored events, just the counter
-    if (g_ring_buffer.total_events > 20) {
-        ESP_LOGW(TAG, "Resetting total events counter (was %" PRIu32 "), only affects counter, not stored events", 
-                 g_ring_buffer.total_events);
-        
-        // Reset the counter but keep the sequence numbers in the ring buffer intact
-        g_ring_buffer.total_events = g_ring_buffer.count;
-        
-        // Update sequence numbers to be sequential starting from 1
-        for (int i = 0; i < g_ring_buffer.count; i++) {
-            int actual_index;
-            if (g_ring_buffer.count < LOGGER_RING_BUFFER_SIZE) {
-                actual_index = i;
-            } else {
-                actual_index = (g_ring_buffer.head + i) % LOGGER_RING_BUFFER_SIZE;
-            }
-            g_ring_buffer.events[actual_index].sequence_number = i + 1;
-        }
-        
-        ESP_LOGI(TAG, "Total events counter reset to %" PRIu32, g_ring_buffer.total_events);
-    }
 }
 
 // Tarea de guardado asíncrono

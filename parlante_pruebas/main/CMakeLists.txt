@@ -4,4 +4,5 @@ idf_component_register(SRCS "main.c"
                                 "../audios/8bit.pcm"
                                 "../audios/start.pcm"
                                 "../audios/lose.pcm"
-                                "../audios/whistle.pcm")
+                                "../audios/whistle.pcm"
+                                "../audios/buenass.pcm")

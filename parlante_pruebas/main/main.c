@@ -32,6 +32,9 @@ extern const uint8_t music4_pcm_end[]   asm("_binary_whistle_pcm_end");
 extern const uint8_t music5_pcm_start[] asm("_binary_lose_pcm_start");
 extern const uint8_t music5_pcm_end[]   asm("_binary_lose_pcm_end");
 
+extern const uint8_t music6_pcm_start[] asm("_binary_buenass_pcm_start");
+extern const uint8_t music6_pcm_end[]   asm("_binary_buenass_pcm_end");
+
 // Task control variables
 static TaskHandle_t audio_task_handle = NULL;
 static bool stop_audio_task = false;
@@ -113,7 +116,7 @@ static esp_err_t play_track(const audio_track_t *track)
     stop_audio_task = false;
     
     // Create new audio task
-    BaseType_t result = xTaskCreate(audio_play_task, "audio_play", 4096, (void*)track, 5, &audio_task_handle);
+    BaseType_t result = xTaskCreate(audio_play_task, "audio_play", 4096, (void*)track, 1, &audio_task_handle);
     if (result != pdPASS) {
         ESP_LOGE(TAG, "Failed to create audio task for %s", track->name);
         return ESP_FAIL;
@@ -184,6 +187,11 @@ void app_main(void)
             .data = music5_pcm_start,
             .size = music5_pcm_end - music5_pcm_start,
             .name = "Lose"
+        },
+        {
+            .data = music6_pcm_start,
+            .size = music6_pcm_end - music6_pcm_start,
+            .name = "Bueenass"
         }
     };
     

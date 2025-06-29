@@ -26,7 +26,7 @@ typedef struct {
  * @brief Default audio controller configuration
  */
 #define AUDIO_CONTROLLER_DEFAULT_CONFIG() { \
-    .sample_rate = 10000, \
+    .sample_rate = 8000, \
     .volume = 50, \
     .microphone_enabled = false \
 }
