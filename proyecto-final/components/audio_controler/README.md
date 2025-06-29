@@ -1,83 +1,46 @@
-# Audio Controller Component
+# Controlador de Audio Mínimo
 
-Un componente ESP-IDF integrado para el control de audio en la placa ESP32-S2-Kaluga-1, que proporciona una interfaz de alto nivel para la reproducción de audio, manejo de playlists y logging automático de eventos utilizando el codec ES8311.
+Un componente ESP-IDF minimalista para el control básico de audio en la placa ESP32-S2-Kaluga-1, que proporciona una interfaz simple para la reproducción de listas de audio utilizando el codec ES8311.
 
 ## Descripción General
 
-Este componente abstrae completamente la complejidad del manejo de audio y logging en el ESP32-S2-Kaluga-1, proporcionando una API simple y robusta para:
+Este componente proporciona una API mínima y eficiente para:
 
-- **Manejo completo de playlists** con reproducción automática
-- **Control de reproducción** (play, pause, stop, next, previous)
-- **Logging automático integrado** de todos los eventos de audio
+- **Inicialización simple** del sistema de audio
+- **Manejo básico de listas de reproducción** 
+- **Controles esenciales de reproducción** (play, pause, next, previous)
 - **Reproducción de audio** a través del codec ES8311
-- **Control de volumen** dinámico
-- **Soporte para micrófono** (opcional)
-- **Gestión automática** de I2S, I2C y logger
+- **Logging integrado** de eventos básicos
 - **Thread-safe** con mutex de FreeRTOS
-- **Auto-advance** configurable entre tracks
 
-## Arquitectura del Componente
+## Arquitectura Minimalista
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    AUDIO CONTROLLER                             │
-│                 (Capa de Abstracción Total)                    │
+│                 CONTROLADOR DE AUDIO MÍNIMO                    │
+│                  (API Esencial Únicamente)                     │
 ├─────────────────────────────────────────────────────────────────┤
-│  PLAYLIST MANAGEMENT:                                           │
+│  FUNCIONES ESENCIALES:                                          │
+│  • audio_controller_init()                                     │
 │  • audio_controller_load_playlist()                            │
-│  • audio_controller_start_playlist()                           │
-│  • audio_controller_stop_playlist()                            │
-│                                                                 │
-│  PLAYER CONTROL:                                                │
-│  • audio_controller_play/pause/stop()                          │
-│  • audio_controller_next/previous()                            │
-│  • audio_controller_get_state/current_track()                  │
+│  • audio_controller_play()                                     │
+│  • audio_controller_pause()                                    │
+│  • audio_controller_next()                                     │
+│  • audio_controller_previous()                                 │
 └─────┬────────────────────────┬────────────────────────┬─────────┘
       │                        │                        │
 ┌─────▼─────┐        ┌─────────▼─────────┐    ┌─────────▼─────────┐
 │  LOGGER   │        │   I2S DRIVER      │    │   ES8311 CODEC    │
-│           │        │                   │    │                   │
-│• Event    │        │ • i2s_driver_init │    │ • es8311_codec_   │
-│  Logging  │        │ • i2s_driver_write│    │   init            │
-│• SPIFFS   │        │ • i2s_driver_     │    │ • es8311_codec_   │
-│  Storage  │        │   preload         │    │   set_volume      │
-│• Thread   │        │ • i2s_driver_     │    │ • Power Amplifier │
-│  Safe     │        │   deinit          │    │   Control         │
-└─────┬─────┘        └─────────┬─────────┘    └─────────┬─────────┘
-      │                        │                        │
-      │              ┌─────────▼─────────┐    ┌─────────▼─────────┐
-      │              │   ESP-IDF I2S     │    │    ESP-IDF I2C    │
-      │              │                   │    │                   │
-      ▼              │ • TX Channel      │    │ • Comunicación    │
-┌─────────────────┐  │ • RX Channel      │    │   con ES8311      │
-│  SPIFFS + VFS   │  │ • DMA Buffer      │    │ • Configuración   │
-│                 │  │ • GPIO Config     │    │   de registros    │
-│ • Persistent    │  └─────────┬─────────┘    └─────────┬─────────┘
-│   Storage       │            │                        │
-│ • Wear Level    │  ┌─────────▼─────────────────────────▼─────────┐
-│ • Auto Save     │  │           HARDWARE ESP32-S2-KALUGA-1        │
-└─────────────────┘  │                                             │
-                     │  I2S Pins:              I2C Pins:          │
-   ┌─────────────────┤  • MCLK: GPIO35         • SDA: GPIO8       │
-   │                 │  • BCLK: GPIO18         • SCL: GPIO7       │
-   │                 │  • WS:   GPIO17                             │
-   │                 │  • DOUT: GPIO12         ES8311 Codec       │
-   │                 │  • DIN:  GPIO46         Power Amp: GPIO10  │
-   │                 └─────────────────────────────────────────────┘
-   │
-   ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      FREERTOS TASKS                             │
-│                                                                 │
-│  ┌─────────────────┐              ┌─────────────────┐          │
-│  │ Playlist Task   │              │ Audio Play Task │          │
-│  │ (Priority: 2)   │              │ (Priority: 1)   │          │
-│  │                 │              │                 │          │
-│  │ • Auto-advance  │              │ • PCM Playback  │          │
-│  │ • Track control │              │ • I2S Writing   │          │
-│  │ • Timing        │              │ • Buffer Mgmt   │          │
-│  └─────────────────┘              └─────────────────┘          │
-└─────────────────────────────────────────────────────────────────┘
+│  BÁSICO   │        │                   │    │                   │
+│           │        │ • i2s_driver_init │    │ • es8311_codec_   │
+│• Event    │        │ • i2s_driver_write│    │   init            │
+│  Logging  │        └─────────┬─────────┘    │ • Volume control  │
+└───────────┘                  │              └─────────┬─────────┘
+                     ┌─────────▼─────────┐    ┌─────────▼─────────┐
+                     │   ESP-IDF I2S     │    │    ESP-IDF I2C    │
+                     │   • TX Channel    │    │ • Comunicación    │
+                     │   • DMA Buffer    │    │   con ES8311      │
+                     └───────────────────┘    └───────────────────┘
 ```
 
 ## Estructura de Archivos
@@ -86,11 +49,11 @@ Este componente abstrae completamente la complejidad del manejo de audio y loggi
 audio_controler/
 ├── CMakeLists.txt              # Configuración de compilación
 ├── README.md                   # Esta documentación
-├── audio_controler.c           # Implementación principal
-├── i2s_driver.c               # Driver I2S personalizado
-├── es8311_codec.c             # Driver ES8311 personalizado
+├── audio_controler.c           # Implementación mínima
+├── i2s_driver.c               # Driver I2S básico
+├── es8311_codec.c             # Driver ES8311 básico
 └── include/
-    ├── audio_controler.h      # API pública
+    ├── audio_controler.h      # API mínima pública
     ├── audio_config.h         # Configuraciones de hardware
     ├── i2s_driver.h          # API del driver I2S
     └── es8311_codec.h        # API del driver ES8311
@@ -118,466 +81,254 @@ audio_controler/
 |-------|------|-------------|
 | PA_CTRL | 10 | Control del Power Amplifier |
 
-## API Reference
+## API Mínima
 
 ### Configuración
 
 ```c
 typedef struct {
-    uint32_t sample_rate;           // Frecuencia de muestreo (Hz)
-    uint8_t volume;                 // Volumen 0-100
-    bool microphone_enabled;        // Habilitar micrófono
-    bool auto_next;                 // Auto avanzar al siguiente track
-    uint32_t track_switch_delay_ms; // Delay entre tracks en ms
+    uint32_t sample_rate;           /*!< Frecuencia de muestreo en Hz */
+    uint8_t volume;                 /*!< Nivel de volumen 0-100 */
+    bool microphone_enabled;        /*!< Habilitar micrófono */
 } audio_controller_config_t;
 
-// Configuración por defecto
 #define AUDIO_CONTROLLER_DEFAULT_CONFIG() { \
     .sample_rate = 8000, \
     .volume = 50, \
-    .microphone_enabled = false, \
-    .auto_next = true, \
-    .track_switch_delay_ms = 2000 \
+    .microphone_enabled = false \
 }
 ```
 
-### Inicialización y Control
+### Funciones Principales
 
 ```c
 /**
- * @brief Inicializar el controlador de audio con logging integrado
+ * @brief Inicializar el controlador de audio
  * @param config Configuración del controlador
  * @return ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_init(const audio_controller_config_t *config);
 
 /**
- * @brief Desinicializar el controlador y limpiar recursos
- * @return ESP_OK en caso de éxito
- */
-esp_err_t audio_controller_deinit(void);
-```
-
-### Manejo de Playlists
-
-```c
-/**
- * @brief Cargar playlist con tracks de audio
- * @param tracks Array de tracks de audio
- * @param num_tracks Número de tracks en la playlist
+ * @brief Cargar lista de reproducción con pistas de audio
+ * @param tracks Array de pistas de audio
+ * @param num_tracks Número de pistas en la lista
  * @return ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_load_playlist(const audio_track_t *tracks, size_t num_tracks);
 
 /**
- * @brief Iniciar reproducción automática de playlist
- * @return ESP_OK en caso de éxito
- */
-esp_err_t audio_controller_start_playlist(void);
-
-/**
- * @brief Detener reproducción de playlist
- * @return ESP_OK en caso de éxito
- */
-esp_err_t audio_controller_stop_playlist(void);
-```
-
-### Control de Reproducción
-
-```c
-/**
- * @brief Reproducir track actual
+ * @brief Reproducir pista actual o reanudar reproducción
  * @return ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_play(void);
 
 /**
- * @brief Pausar track actual
+ * @brief Pausar pista actual
  * @return ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_pause(void);
 
 /**
- * @brief Detener track actual
- * @return ESP_OK en caso de éxito
- */
-esp_err_t audio_controller_stop(void);
-
-/**
- * @brief Saltar al siguiente track
+ * @brief Saltar a la siguiente pista
  * @return ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_next(void);
 
 /**
- * @brief Ir al track anterior
+ * @brief Ir a la pista anterior
  * @return ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_previous(void);
 ```
 
-### Estado e Información
-
-```c
-/**
- * @brief Obtener estado actual del player
- * @return audio_player_state_t Estado actual
- */
-audio_player_state_t audio_controller_get_state(void);
-
-/**
- * @brief Obtener índice del track actual
- * @return int Índice del track actual, -1 si no hay playlist cargada
- */
-int audio_controller_get_current_track(void);
-
-/**
- * @brief Obtener nombre del track actual
- * @return const char* Nombre del track actual, NULL si no hay track
- */
-const char* audio_controller_get_current_track_name(void);
-
-/**
- * @brief Obtener número total de tracks en la playlist
- * @return size_t Número de tracks
- */
-size_t audio_controller_get_playlist_size(void);
-```
-
-## Ejemplo de Uso
-
-### Uso Básico Integrado (Nuevo)
+## Ejemplo de Uso Básico
 
 ```c
 #include "audio_controler.h"
 
-// External references to embedded audio data
+// Referencias externas a datos de audio embebidos
 extern const uint8_t music1_pcm_start[] asm("_binary_song1_pcm_start");
 extern const uint8_t music1_pcm_end[]   asm("_binary_song1_pcm_end");
 extern const uint8_t music2_pcm_start[] asm("_binary_song2_pcm_start");
 extern const uint8_t music2_pcm_end[]   asm("_binary_song2_pcm_end");
 
 void app_main() {
-    // Configurar audio controller con logging integrado
+    // Configuración básica del controlador de audio
     audio_controller_config_t config = AUDIO_CONTROLLER_DEFAULT_CONFIG();
-    config.volume = 75;                     // 75% volume
-    config.auto_next = true;                // Enable auto-advance
-    config.track_switch_delay_ms = 4000;    // 4 seconds per track
+    config.volume = 75;  // Volumen al 75%
     
-    // Inicializar (incluye logger automáticamente)
+    // Inicializar el controlador de audio
     ESP_ERROR_CHECK(audio_controller_init(&config));
     
-    // Preparar playlist
+    // Preparar lista de reproducción
     audio_track_t tracks[] = {
         {
             .data = music1_pcm_start,
             .size = music1_pcm_end - music1_pcm_start,
-            .name = "Song 1"
+            .name = "Canción 1"
         },
         {
             .data = music2_pcm_start,
             .size = music2_pcm_end - music2_pcm_start,
-            .name = "Song 2"
+            .name = "Canción 2"
         }
     };
     
-    // Cargar playlist
+    // Cargar lista de reproducción
     ESP_ERROR_CHECK(audio_controller_load_playlist(tracks, 2));
     
-    // Iniciar reproducción automática
-    ESP_ERROR_CHECK(audio_controller_start_playlist());
-    
-    // ¡Eso es todo! El audio se reproduce automáticamente con logging
-    
-    // Opcionalmente, controlar manualmente:
-    // audio_controller_next();      // Siguiente canción
-    // audio_controller_previous();  // Canción anterior
-    // audio_controller_pause();     // Pausar
-    // audio_controller_play();      // Reanudar
-    
-    while (1) {
-        // Monitorear estado
-        ESP_LOGI("MAIN", "Playing: %s", audio_controller_get_current_track_name());
-        vTaskDelay(pdMS_TO_TICKS(5000));
+    // Loop de demostración simple
+    while (true) {
+        ESP_LOGI("MAIN", "🎵 Reproduciendo...");
+        audio_controller_play();
+        vTaskDelay(pdMS_TO_TICKS(5000));  // Reproducir por 5 segundos
+        
+        ESP_LOGI("MAIN", "⏸️ Pausando...");
+        audio_controller_pause();
+        vTaskDelay(pdMS_TO_TICKS(2000));  // Pausa por 2 segundos
+        
+        ESP_LOGI("MAIN", "⏭️ Siguiente pista...");
+        audio_controller_next();
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Esperar 1 segundo
+        
+        ESP_LOGI("MAIN", "⏮️ Pista anterior...");
+        audio_controller_previous();
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Esperar 1 segundo
     }
 }
 ```
 
-### Control Manual de Playlist
+## Uso con GPIO Buttons
 
 ```c
-void manual_playlist_control() {
-    // Controlar reproducción manualmente
-    ESP_LOGI("MAIN", "Current track: %d/%zu", 
-             audio_controller_get_current_track() + 1,
-             audio_controller_get_playlist_size());
-    
-    // Saltar canciones
-    audio_controller_next();
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    
-    // Volver atrás
-    audio_controller_previous();
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    
-    // Pausar y reanudar
-    audio_controller_pause();
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    audio_controller_play();
-    
-    // Todos los eventos se loguean automáticamente
+#include "audio_controler.h"
+#include "driver/gpio.h"
+
+#define BUTTON_PLAY_PAUSE  GPIO_NUM_0
+#define BUTTON_NEXT        GPIO_NUM_1
+#define BUTTON_PREVIOUS    GPIO_NUM_2
+
+void configure_buttons() {
+    gpio_config_t io_conf = {
+        .intr_type = GPIO_INTR_NEGEDGE,
+        .mode = GPIO_MODE_INPUT,
+        .pin_bit_mask = (1ULL << BUTTON_PLAY_PAUSE) | 
+                       (1ULL << BUTTON_NEXT) | 
+                       (1ULL << BUTTON_PREVIOUS),
+        .pull_down_en = 0,
+        .pull_up_en = 1,
+    };
+    gpio_config(&io_conf);
 }
-```
 
-### Monitoreo de Estado
-
-```c
-void monitor_player_status() {
-    audio_player_state_t state = audio_controller_get_state();
-    int current_track = audio_controller_get_current_track();
-    const char* track_name = audio_controller_get_current_track_name();
-    size_t playlist_size = audio_controller_get_playlist_size();
+void button_task(void *args) {
+    static bool is_playing = false;
     
-    const char* state_str = "UNKNOWN";
-    switch (state) {
-        case AUDIO_STATE_STOPPED: state_str = "STOPPED"; break;
-        case AUDIO_STATE_PLAYING: state_str = "PLAYING"; break;
-        case AUDIO_STATE_PAUSED:  state_str = "PAUSED"; break;
+    while (true) {
+        if (gpio_get_level(BUTTON_PLAY_PAUSE) == 0) {
+            if (is_playing) {
+                audio_controller_pause();
+                is_playing = false;
+                ESP_LOGI("BUTTON", "⏸️ Pausado");
+            } else {
+                audio_controller_play();
+                is_playing = true;
+                ESP_LOGI("BUTTON", "▶️ Reproduciendo");
+            }
+            vTaskDelay(pdMS_TO_TICKS(300)); // Debounce
+        }
+        
+        if (gpio_get_level(BUTTON_NEXT) == 0) {
+            audio_controller_next();
+            ESP_LOGI("BUTTON", "⏭️ Siguiente");
+            vTaskDelay(pdMS_TO_TICKS(300)); // Debounce
+        }
+        
+        if (gpio_get_level(BUTTON_PREVIOUS) == 0) {
+            audio_controller_previous();
+            ESP_LOGI("BUTTON", "⏮️ Anterior");
+            vTaskDelay(pdMS_TO_TICKS(300)); // Debounce
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(50)); // Check buttons every 50ms
     }
+}
+
+void app_main() {
+    // Inicializar audio
+    audio_controller_config_t config = AUDIO_CONTROLLER_DEFAULT_CONFIG();
+    ESP_ERROR_CHECK(audio_controller_init(&config));
     
-    ESP_LOGI("STATUS", "%s | Track %d/%zu: %s", 
-             state_str, current_track + 1, playlist_size, track_name);
+    // Configurar botones
+    configure_buttons();
+    
+    // Cargar playlist (ejemplo)
+    // ... código para cargar pistas ...
+    
+    // Crear tarea para manejar botones
+    xTaskCreate(button_task, "button_task", 2048, NULL, 1, NULL);
 }
 ```
 
-## Configuraciones Soportadas
+## Configuración del Proyecto
 
-### Frecuencias de Muestreo
-- **8 kHz** - Calidad de voz básica (por defecto)
-- **16 kHz** - Calidad de voz mejorada
-- **22.05 kHz** - Calidad multimedia básica
-- **44.1 kHz** - Calidad CD
-- **48 kHz** - Calidad profesional
-
-### Formato de Audio
-- **Bits por muestra**: 16-bit
-- **Canales**: Estéreo
-- **Formato**: PCM sin comprimir
-- **Endianness**: Little-endian
-
-### Dependencias del Sistema
+### 1. Agregar al CMakeLists.txt principal
 
 ```cmake
-# En tu CMakeLists.txt principal o del componente
+# CMakeLists.txt del proyecto principal
+cmake_minimum_required(VERSION 3.16)
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(audio_project)
+```
+
+### 2. Configurar dependencias en el componente
+
+```cmake
+# components/audio_controler/CMakeLists.txt
 idf_component_register(
-    SRCS "tu_codigo.c"
+    SRCS "audio_controler.c" "i2s_driver.c" "es8311_codec.c"
     INCLUDE_DIRS "include"
-    REQUIRES audio_controler  # Incluye automáticamente logger
+    REQUIRES "driver" "esp_timer" "logger"
 )
-```
-
-### Componentes ESP-IDF Requeridos
-- `driver` - Drivers de hardware
-- `esp_driver_i2s` - Driver I2S
-- `esp_driver_i2c` - Driver I2C
-- `esp_driver_gpio` - Control de GPIO
-- `freertos` - Sistema operativo en tiempo real
-- `esp_common` - Utilidades comunes
-- `espressif__es8311` - Driver oficial ES8311
-- `logger` - **Integrado automáticamente** para logging de eventos
-
-### Hardware Requerido
-- **ESP32-S2-Kaluga-1** Development Kit
-- **ES8311** Audio Codec (integrado en la placa)
-- **Altavoz** conectado a la salida de audio
-- **Micrófono** (opcional)
-- **Partición SPIFFS** para almacenamiento de logs
-
-## Nuevas Características Integradas
-
-### 🎵 **Manejo Completo de Playlists**
-- Carga múltiples tracks de audio
-- Reproducción automática secuencial
-- Avance automático configurable
-- Control manual (next/previous)
-
-### 📊 **Logging Automático Integrado**
-- Todos los eventos de audio se loguean automáticamente
-- Almacenamiento persistente en SPIFFS
-- Buffer circular de 20 eventos
-- Thread-safe y no bloqueante
-
-### 🎛️ **Control de Estado Avanzado**
-- Estados: STOPPED, PLAYING, PAUSED
-- Información de track actual
-- Monitoreo de progreso de playlist
-- Thread-safe con mutex
-
-### ⚡ **Gestión de Tareas FreeRTOS**
-- Tarea de gestión de playlist (Prioridad 2)
-- Tarea de reproducción de audio (Prioridad 1)
-- Tarea de logging asíncrono (Prioridad 1)
-- Sincronización automática entre tareas
-
-## Ventajas del Diseño Integrado
-
-### ✅ **Simplicidad de Uso**
-```c
-// Antes (código complejo en main)
-logger_init();
-audio_controller_init();
-// Manejo manual de tracks, tareas, logging...
-
-// Ahora (una sola llamada)
-audio_controller_init(&config);  // Incluye todo automáticamente
-audio_controller_load_playlist(tracks, count);
-audio_controller_start_playlist();  // ¡Listo!
-```
-
-### ✅ **Gestión Automática de Recursos**
-- **Sin memory leaks**: Limpieza automática de tareas y memoria
-- **Thread safety**: Mutex interno protege todas las operaciones
-- **Error handling**: Gestión robusta de errores en todas las capas
-
-### ✅ **Logging Transparente**
-- **Eventos automáticos**: PLAY, PAUSE, STOP, NEXT, PREVIOUS se loguean automáticamente
-- **Persistencia**: Todos los logs se guardan en SPIFFS sin intervención del usuario
-- **Thread-safe**: Logging asíncrono que no afecta la reproducción de audio
-
-### ✅ **Configuración Flexible**
-```c
-audio_controller_config_t config = AUDIO_CONTROLLER_DEFAULT_CONFIG();
-config.auto_next = true;                // Auto-advance entre tracks
-config.track_switch_delay_ms = 4000;    // 4 segundos por track
-config.volume = 75;                     // Volumen al 75%
-```
-
-## Limitaciones y Consideraciones
-
-### Limitaciones Técnicas
-1. **Formato de Audio**: Solo soporta PCM 16-bit estéreo
-2. **Hardware Específico**: Diseñado específicamente para ESP32-S2-Kaluga-1
-3. **Frecuencias**: Limitado a las frecuencias soportadas por el ES8311
-4. **Memoria**: Los tracks se cargan completamente en memoria (no streaming)
-5. **Pause/Resume**: Implementación simplificada (reinicia el track)
-
-### Consideraciones de Rendimiento
-- **Memoria RAM**: Cada track debe caber completamente en memoria
-- **Tareas FreeRTOS**: Usa 3 tareas concurrentes (playlist, audio, logger)
-- **Prioridades**: Configuradas para no interferir con tareas críticas
-- **Mutex Timeout**: 100ms para operaciones de control, 10ms para consultas
-
-### Configuración de Particiones
-Asegúrate de incluir SPIFFS en tu tabla de particiones:
-
-```csv
-# Name, Type, SubType, Offset, Size, Flags
-nvs,      data, nvs,     0x9000,  0x6000,
-phy_init, data, phy,     0xf000,  0x1000,
-factory,  app,  factory, 0x10000, 0x180000,
-spiffs,   data, spiffs,  ,        0x70000,  # Para logs de audio
-```
-
-## Migración desde Versión Anterior
-
-### Cambios en la API
-
-#### ❌ **Código Anterior (Deprecated)**
-```c
-// Manejo manual en main.c
-logger_init();
-audio_controller_init(&config);
-
-// Tareas manuales para cada track
-xTaskCreate(audio_play_task, "audio", 4096, track_data, 1, NULL);
-logger_log_event(LOGGER_EVENT_PLAY);  // Manual logging
-```
-
-#### ✅ **Código Nuevo (Recomendado)**
-```c
-// Todo integrado en el componente
-audio_controller_init(&config);  // Incluye logger automáticamente
-audio_controller_load_playlist(tracks, count);
-audio_controller_start_playlist();  // Logging automático
-```
-
-### Funciones Renombradas
-- `audio_controller_play(data, size)` → `audio_controller_play_data(data, size)` (deprecated)
-- `audio_controller_play()` → **Nueva función para control de playlist**
-
-### Nuevas Estructuras
-```c
-// Nueva estructura para tracks
-typedef struct {
-    const uint8_t *data;
-    size_t size;
-    const char *name;
-} audio_track_t;
-
-// Nuevos estados
-typedef enum {
-    AUDIO_STATE_STOPPED,
-    AUDIO_STATE_PLAYING,
-    AUDIO_STATE_PAUSED
-} audio_player_state_t;
 ```
 
 ## Troubleshooting
 
 ### Problemas Comunes
 
-#### No se escucha audio
-- Verificar conexiones de hardware
-- Comprobar que el Power Amplifier esté habilitado
-- Verificar nivel de volumen (no esté en 0)
-- Revisar formato de datos de audio
+1. **Error de inicialización I2S**
+   - Verificar que los pines GPIO estén correctamente configurados
+   - Asegurar que no haya conflicto con otros drivers I2S
 
-#### Audio distorsionado
-- Verificar frecuencia de muestreo correcta
-- Comprobar que los datos estén en formato PCM 16-bit
-- Revisar nivel de volumen (podría estar muy alto)
+2. **Sin audio**
+   - Verificar conexiones del amplificador (GPIO10)
+   - Comprobar configuración del codec ES8311
+   - Verificar que el volumen no esté en 0
 
-#### Error de inicialización
-- Verificar que los pines estén libres y no en uso por otros periféricos
-- Comprobar configuración de I2C e I2S
-- Verificar que el ES8311 esté correctamente conectado
+3. **Errores de memoria**
+   - Asegurar que las pistas de audio no sean demasiado grandes
+   - Verificar que hay suficiente heap disponible
 
 ### Logs de Debug
 
-Para habilitar logs detallados, configurar el nivel de log:
-```c
-esp_log_level_set("audio_controller", ESP_LOG_DEBUG);
-esp_log_level_set("i2s_driver", ESP_LOG_DEBUG);
-esp_log_level_set("es8311_codec", ESP_LOG_DEBUG);
+El componente proporciona logs detallados. Para habilitar debug completo:
+
+```
+idf.py menuconfig
+→ Component config
+→ Log output
+→ Default log verbosity → Debug
 ```
 
-## Contribuciones
+## Limitaciones
 
-Para contribuir al desarrollo de este componente:
-
-1. Hacer fork del repositorio
-2. Crear una branch para la nueva característica
-3. Implementar los cambios con pruebas
-4. Enviar un pull request
+- **API Mínima**: Solo funciones esenciales, sin controles avanzados
+- **Un solo formato**: Solo PCM sin compresión
+- **Sin streaming**: Los datos deben estar en memoria
+- **Thread safety básico**: Un solo mutex para toda la operación
+- **Sin auto-advance**: Las pistas se reproducen manualmente
 
 ## Licencia
 
-```
-SPDX-FileCopyrightText: 2024 Espressif Systems (Shanghai) CO LTD
-SPDX-License-Identifier: CC0-1.0
-```
-
-## Changelog
-
-### v1.0.0
-- Implementación inicial
-- Soporte para reproducción de audio
-- Control de volumen
-- Funciones de preload
-- Soporte para ESP32-S2-Kaluga-1
-
-## Referencias
-
-- [ESP32-S2-Kaluga-1 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/hw-reference/esp32s2/user-guide-esp32-s2-kaluga-1-kit.html)
-- [ESP-IDF I2S Driver](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/api-reference/peripherals/i2s.html)
-- [ES8311 Codec Datasheet](https://www.everest-semi.com/pdf/ES8311%20PB.pdf)
+Este componente está bajo la licencia CC0-1.0 (dominio público).

@@ -30,3 +30,14 @@ Below is short explanation of remaining files in the project folder.
 ```
 Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system. 
 They are not used or needed when building with CMake and idf.py.
+
+
+Se modificó el partition table para funcionar:
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x8000
+CONFIG_PARTITION_TABLE_MD5=y
+
+Y se activo el mqqt de las config de idf tambien 
+CONFIG_MQTT_PROTOCOL_5=y

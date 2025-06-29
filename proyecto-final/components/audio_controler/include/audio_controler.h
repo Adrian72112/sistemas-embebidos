@@ -14,25 +14,25 @@ extern "C" {
 #endif
 
 /**
- * @brief Audio track structure
+ * @brief Estructura de pista de audio
  */
 typedef struct {
-    const uint8_t *data;        /*!< Pointer to audio data */
-    size_t size;                /*!< Size of audio data in bytes */
-    const char *name;           /*!< Track name */
+    const uint8_t *data;        /*!< Puntero a los datos de audio */
+    size_t size;                /*!< Tamaño de los datos de audio en bytes */
+    const char *name;           /*!< Nombre de la pista */
 } audio_track_t;
 
 /**
- * @brief Audio controller configuration
+ * @brief Configuración del controlador de audio
  */
 typedef struct {
-    uint32_t sample_rate;           /*!< Sample rate in Hz */
-    uint8_t volume;                 /*!< Volume level 0-100 */
-    bool microphone_enabled;        /*!< Enable microphone */
+    uint32_t sample_rate;           /*!< Frecuencia de muestreo en Hz */
+    uint8_t volume;                 /*!< Nivel de volumen 0-100 */
+    bool microphone_enabled;        /*!< Habilitar micrófono */
 } audio_controller_config_t;
 
 /**
- * @brief Default audio controller configuration
+ * @brief Configuración predeterminada del controlador de audio
  */
 #define AUDIO_CONTROLLER_DEFAULT_CONFIG() { \
     .sample_rate = 8000, \
@@ -41,47 +41,47 @@ typedef struct {
 }
 
 /**
- * @brief Initialize audio controller
+ * @brief Inicializar el controlador de audio
  * 
- * @param config Audio controller configuration
- * @return esp_err_t ESP_OK on success
+ * @param config Configuración del controlador de audio
+ * @return esp_err_t ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_init(const audio_controller_config_t *config);
 
 /**
- * @brief Load playlist with audio tracks
+ * @brief Cargar lista de reproducción con pistas de audio
  * 
- * @param tracks Array of audio tracks
- * @param num_tracks Number of tracks in the playlist
- * @return esp_err_t ESP_OK on success
+ * @param tracks Array de pistas de audio
+ * @param num_tracks Número de pistas en la lista de reproducción
+ * @return esp_err_t ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_load_playlist(const audio_track_t *tracks, size_t num_tracks);
 
 /**
- * @brief Play current track or resume playback
+ * @brief Reproducir pista actual o reanudar reproducción
  * 
- * @return esp_err_t ESP_OK on success
+ * @return esp_err_t ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_play(void);
 
 /**
- * @brief Pause current track
+ * @brief Pausar pista actual
  * 
- * @return esp_err_t ESP_OK on success
+ * @return esp_err_t ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_pause(void);
 
 /**
- * @brief Skip to next track
+ * @brief Saltar a la siguiente pista
  * 
- * @return esp_err_t ESP_OK on success
+ * @return esp_err_t ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_next(void);
 
 /**
- * @brief Go to previous track
+ * @brief Ir a la pista anterior
  * 
- * @return esp_err_t ESP_OK on success
+ * @return esp_err_t ESP_OK en caso de éxito
  */
 esp_err_t audio_controller_previous(void);
 
