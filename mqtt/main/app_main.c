@@ -5,7 +5,7 @@
 #include "wifi_connection.h"
 #include "esp_log.h"
 
-#define BROKER_URI CONFIG_MQTT_BROKER_URL
+#define BROKER_URI "mqtt://broker.hivemq.com"
 
 static const char *TAG = "main";
 

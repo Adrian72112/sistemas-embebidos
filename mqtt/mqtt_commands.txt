@@ -1,0 +1,26 @@
+# Comandos MQTT para testing
+
+## Publicar un mensaje desde CMD
+mosquitto_pub -h broker.hivemq.com -t "test/topic" -m "Hola desde CMD"
+
+## Publicar con más opciones
+mosquitto_pub -h broker.hivemq.com -p 1883 -t "test/topic" -m "Mensaje de prueba" -q 1
+
+## Suscribirse a un tópico para ver mensajes
+mosquitto_sub -h broker.hivemq.com -t "test/topic"
+
+## Suscribirse a todos los tópicos (para debug)
+mosquitto_sub -h broker.hivemq.com -t "#"
+
+## Publicar un mensaje JSON
+mosquitto_pub -h broker.hivemq.com -t "sensor/data" -m "{\"temperature\": 25.5, \"humidity\": 60}"
+
+# Parámetros útiles:
+# -h: hostname del broker
+# -p: puerto (1883 por defecto para MQTT sin SSL)
+# -t: tópico
+# -m: mensaje
+# -q: calidad de servicio (0, 1, 2)
+# -r: mensaje retenido
+# -u: usuario (si se requiere autenticación)
+# -P: contraseña (si se requiere autenticación)

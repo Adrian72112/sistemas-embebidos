@@ -201,8 +201,8 @@ esp_err_t wifi_connect_to_ap(void)
     wifi_start();
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = CONFIG_WIFI_SSID,
-            .password = CONFIG_WIFI_PASSWORD,
+            .ssid = "SeTeLINK",
+            .password = "mvn5ts4k.",
             .scan_method = WIFI_SCAN_METHOD,
             .sort_method = WIFI_CONNECT_AP_SORT_METHOD,
             .threshold.rssi = CONFIG_WIFI_SCAN_RSSI_THRESHOLD,
