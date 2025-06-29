@@ -1,5 +1,5 @@
 #include "mqtt_lib.h"
-#include "nvs_flash.h"
+#include "nvs_flash.h" //manejo de memoria no volatil
 #include "esp_event.h"
 #include "esp_netif.h"
 #include "wifi_connection.h"
