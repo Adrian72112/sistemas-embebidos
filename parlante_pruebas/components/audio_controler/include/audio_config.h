@@ -14,7 +14,7 @@ extern "C" {
 
 /* Audio Configuration Constants */
 #define EXAMPLE_RECV_BUF_SIZE       (2400)
-#define EXAMPLE_SAMPLE_RATE         (8000) // 8kHz sample rate
+#define EXAMPLE_SAMPLE_RATE         (10000) // 8kHz sample rate
 #define EXAMPLE_MCLK_MULTIPLE       (384)  // If not using 24-bit data width, 256 should be enough
 #define EXAMPLE_MCLK_FREQ_HZ        (EXAMPLE_SAMPLE_RATE * EXAMPLE_MCLK_MULTIPLE)
 #define EXAMPLE_VOICE_VOLUME        (50)   // Volume level for ES8311 codec, range: 0-100

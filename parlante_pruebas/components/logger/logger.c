@@ -14,31 +14,61 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
 
 static const char *TAG = "LOGGER";
 
+// Configuración de la tarea de guardado
+#define LOGGER_SAVE_TASK_STACK_SIZE     4096
+#define LOGGER_SAVE_TASK_PRIORITY       1        // Baja prioridad
+#define LOGGER_SAVE_QUEUE_SIZE          10       // Cola para eventos de guardado
+#define LOGGER_SAVE_TASK_NAME           "logger_save"
+
+// Tipos de comandos para la tarea de guardado
+typedef enum {
+    LOGGER_SAVE_CMD_SAVE_BUFFER = 0,
+    LOGGER_SAVE_CMD_SHUTDOWN
+} logger_save_cmd_t;
+
 // Global variables
 static bool g_logger_initialized = false;
 static logger_ring_buffer_t g_ring_buffer;
 static SemaphoreHandle_t g_ring_buffer_mutex;
+static TaskHandle_t g_save_task_handle = NULL;
+static QueueHandle_t g_save_queue = NULL;
 
 // Private function declarations
 static void logger_ring_buffer_init(void);
 static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type);
 static esp_err_t logger_init_spiffs(void);
 static void logger_trim_total_events_if_needed(void);
+static void logger_save_task(void *pvParameters);
+static esp_err_t logger_create_save_task(void);
+static esp_err_t logger_destroy_save_task(void);
+static esp_err_t logger_request_save_async(void);
 
 // Shutdown handler para guardar automáticamente antes de reset
 static void logger_shutdown_handler(void)
 {
-    if (g_logger_initialized) {
+    if (g_logger_initialized && g_save_queue != NULL) {
         ESP_LOGI(TAG, "Auto-saving ring buffer on shutdown...");
-        esp_err_t err = logger_save_to_file();
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to save ring buffer on shutdown: %s", esp_err_to_name(err));
+        
+        // Enviar comando de shutdown a la tarea de guardado
+        logger_save_cmd_t cmd = LOGGER_SAVE_CMD_SHUTDOWN;
+        if (xQueueSend(g_save_queue, &cmd, pdMS_TO_TICKS(1000)) != pdTRUE) {
+            ESP_LOGE(TAG, "Failed to send shutdown command to save task");
+            // Fallback: guardar directamente
+            esp_err_t err = logger_save_to_file();
+            if (err != ESP_OK) {
+                ESP_LOGE(TAG, "Failed to save ring buffer on shutdown: %s", esp_err_to_name(err));
+            }
+        } else {
+            // Dar tiempo a la tarea para procesar el comando
+            vTaskDelay(pdMS_TO_TICKS(500));
         }
     }
 }
@@ -77,6 +107,16 @@ esp_err_t logger_init(void)
         logger_ring_buffer_init();
     }
 
+    // Create save task and queue
+    err = logger_create_save_task();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create save task: %s", esp_err_to_name(err));
+        esp_vfs_spiffs_unregister(NULL);
+        vSemaphoreDelete(g_ring_buffer_mutex);
+        g_logger_initialized = false;
+        return err;
+    }
+
     // Register shutdown handler to auto-save on reset
     esp_register_shutdown_handler(&logger_shutdown_handler);
 
@@ -93,10 +133,10 @@ esp_err_t logger_deinit(void)
 
     ESP_LOGI(TAG, "Deinitializing logger...");
 
-    // Save ring buffer to SPIFFS before deinitializing
-    esp_err_t err = logger_save_to_file();
+    // Destroy save task first (this will also save the buffer one last time)
+    esp_err_t err = logger_destroy_save_task();
     if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to save ring buffer during deinit: %s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "Failed to destroy save task: %s", esp_err_to_name(err));
     }
 
     // Clean up mutex
@@ -145,11 +185,8 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
     // Trim total events counter periodically to prevent overflow
     logger_trim_total_events_if_needed();
 
-    // Save to SPIFFS after each event for persistence
-    err = logger_save_to_file();
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to save to SPIFFS: %s", esp_err_to_name(err));
-    }
+    // Request async save to SPIFFS (non-blocking)
+    logger_request_save_async();
 
     return ESP_OK;
 }
@@ -184,8 +221,10 @@ void logger_print_info(void)
     printf("\n=== LOGGER INFO ===\n");
     printf("Initialized: %s\n", g_logger_initialized ? "YES" : "NO");
     printf("Ring buffer size: %d\n", LOGGER_RING_BUFFER_SIZE);
-    printf("Storage: SPIFFS\n");
+    printf("Storage: SPIFFS (Async)\n");
     printf("File path: %s\n", LOGGER_FILE_PATH);
+    printf("Save task: %s\n", (g_save_task_handle != NULL) ? "RUNNING" : "STOPPED");
+    printf("Save queue: %s\n", (g_save_queue != NULL) ? "CREATED" : "NOT CREATED");
     
     if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         printf("Ring buffer count: %d\n", g_ring_buffer.count);
@@ -499,7 +538,7 @@ static void logger_trim_total_events_if_needed(void)
 {
     // Reset total_events counter when it gets too large to prevent overflow
     // This doesn't affect the actual stored events, just the counter
-    if (g_ring_buffer.total_events > 10000) {
+    if (g_ring_buffer.total_events > 20) {
         ESP_LOGW(TAG, "Resetting total events counter (was %" PRIu32 "), only affects counter, not stored events", 
                  g_ring_buffer.total_events);
         
@@ -519,4 +558,123 @@ static void logger_trim_total_events_if_needed(void)
         
         ESP_LOGI(TAG, "Total events counter reset to %" PRIu32, g_ring_buffer.total_events);
     }
+}
+
+// Tarea de guardado asíncrono
+static void logger_save_task(void *pvParameters)
+{
+    logger_save_cmd_t cmd;
+    
+    ESP_LOGI(TAG, "Logger save task started");
+    
+    while (1) {
+        // Esperar por comandos en la cola
+        if (xQueueReceive(g_save_queue, &cmd, portMAX_DELAY) == pdTRUE) {
+            switch (cmd) {
+                case LOGGER_SAVE_CMD_SAVE_BUFFER:
+                    // Guardar buffer a SPIFFS
+                    esp_err_t err = logger_save_to_file();
+                    if (err != ESP_OK) {
+                        ESP_LOGW(TAG, "Async save failed: %s", esp_err_to_name(err));
+                    }
+                    break;
+                    
+                case LOGGER_SAVE_CMD_SHUTDOWN:
+                    // Comando de apagado - hacer guardado final y salir
+                    ESP_LOGI(TAG, "Save task received shutdown command");
+                    esp_err_t shutdown_err = logger_save_to_file();
+                    if (shutdown_err != ESP_OK) {
+                        ESP_LOGE(TAG, "Final save failed: %s", esp_err_to_name(shutdown_err));
+                    } else {
+                        ESP_LOGI(TAG, "Final save completed successfully");
+                    }
+                    
+                    // Salir del bucle para terminar la tarea
+                    goto task_exit;
+                    
+                default:
+                    ESP_LOGW(TAG, "Unknown save command: %d", cmd);
+                    break;
+            }
+        }
+    }
+    
+task_exit:
+    ESP_LOGI(TAG, "Logger save task exiting");
+    vTaskDelete(NULL);
+}
+
+// Crear tarea de guardado y cola
+static esp_err_t logger_create_save_task(void)
+{
+    // Crear cola para comandos de guardado
+    g_save_queue = xQueueCreate(LOGGER_SAVE_QUEUE_SIZE, sizeof(logger_save_cmd_t));
+    if (g_save_queue == NULL) {
+        ESP_LOGE(TAG, "Failed to create save queue");
+        return ESP_ERR_NO_MEM;
+    }
+    
+    // Crear tarea de guardado
+    BaseType_t task_created = xTaskCreate(logger_save_task, 
+                                         LOGGER_SAVE_TASK_NAME,
+                                         LOGGER_SAVE_TASK_STACK_SIZE,
+                                         NULL,
+                                         LOGGER_SAVE_TASK_PRIORITY,
+                                         &g_save_task_handle);
+    
+    if (task_created != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create save task");
+        vQueueDelete(g_save_queue);
+        g_save_queue = NULL;
+        return ESP_ERR_NO_MEM;
+    }
+    
+    ESP_LOGI(TAG, "Save task created successfully (priority: %d)", LOGGER_SAVE_TASK_PRIORITY);
+    return ESP_OK;
+}
+
+// Destruir tarea de guardado y cola
+static esp_err_t logger_destroy_save_task(void)
+{
+    if (g_save_queue != NULL && g_save_task_handle != NULL) {
+        // Enviar comando de shutdown
+        logger_save_cmd_t cmd = LOGGER_SAVE_CMD_SHUTDOWN;
+        if (xQueueSend(g_save_queue, &cmd, pdMS_TO_TICKS(1000)) == pdTRUE) {
+            // Esperar a que la tarea termine
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        } else {
+            ESP_LOGW(TAG, "Failed to send shutdown command, forcing task deletion");
+            vTaskDelete(g_save_task_handle);
+        }
+        
+        g_save_task_handle = NULL;
+    }
+    
+    if (g_save_queue != NULL) {
+        vQueueDelete(g_save_queue);
+        g_save_queue = NULL;
+    }
+    
+    ESP_LOGI(TAG, "Save task destroyed");
+    return ESP_OK;
+}
+
+// Solicitar guardado asíncrono (no bloqueante)
+static esp_err_t logger_request_save_async(void)
+{
+    if (g_save_queue == NULL) {
+        ESP_LOGW(TAG, "Save queue not available");
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    logger_save_cmd_t cmd = LOGGER_SAVE_CMD_SAVE_BUFFER;
+    
+    // Enviar comando sin bloquear (si la cola está llena, no importa)
+    if (xQueueSend(g_save_queue, &cmd, 0) != pdTRUE) {
+        // La cola está llena, pero no es crítico
+        // El próximo evento será guardado cuando haya espacio
+        return ESP_OK;
+    }
+    
+    return ESP_OK;
 }

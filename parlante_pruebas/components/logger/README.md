@@ -6,9 +6,10 @@ Un logger de eventos de audio thread-safe para ESP32 con almacenamiento persiste
 
 - **Buffer Circular**: Almacena los últimos 20 eventos de audio en un buffer circular
 - **Thread Safety**: Usa mutex de FreeRTOS para acceso concurrente seguro
+- **Almacenamiento Asíncrono**: Guardado no bloqueante usando tarea de FreeRTOS de baja prioridad
 - **Almacenamiento Persistente**: Guarda automáticamente eventos al sistema de archivos SPIFFS
 - **Wear Leveling**: Construido sobre SPIFFS para distribución de desgaste de flash
-- **Auto-Guardado**: Guarda en cada evento y al apagar el sistema
+- **Auto-Guardado**: Guarda en background sin afectar el rendimiento de audio
 - **Tipos de Eventos**: Soporta eventos PLAY, PAUSE, NEXT, PREVIOUS, STOP
 - **Timestamps**: Cada evento incluye timestamp con precisión de microsegundos
 - **Números de Secuencia**: Numeración secuencial global para ordenamiento de eventos
@@ -23,7 +24,13 @@ Un logger de eventos de audio thread-safe para ESP32 con almacenamiento persiste
                                 │                       │
                                 ▼                       ▼
                        ┌─────────────────┐    ┌─────────────────┐
-                       │  SPIFFS VFS     │    │  Mutex FreeRTOS │
+                       │ Tarea Guardado  │    │  Mutex FreeRTOS │
+                       │ (Baja Prioridad)│    └─────────────────┘
+                       └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐    ┌─────────────────┐
+                       │  SPIFFS VFS     │    │  Cola FreeRTOS  │
                        └─────────────────┘    └─────────────────┘
                                 │
                                 ▼
@@ -170,16 +177,19 @@ El logger es completamente thread-safe y puede ser llamado desde:
 
 ## Consideraciones de Rendimiento
 
-- Cada llamada a `logger_log_event()` escribe a flash (SPIFFS)
-- Para logging de alta frecuencia, considera agrupar eventos
-- SPIFFS provee distribución de desgaste pero tiene ciclos de escritura finitos
-- El timeout del mutex está configurado a 100ms para todas las operaciones
+- **Logging No Bloqueante**: `logger_log_event()` retorna inmediatamente sin afectar audio
+- **Guardado Asíncrono**: Una tarea de baja prioridad maneja el guardado a flash
+- **Cola de Comandos**: Sistema de cola previene pérdida de datos durante alta carga
+- **SPIFFS**: Provee distribución de desgaste pero tiene ciclos de escritura finitos
+- **Prioridad Baja**: La tarea de guardado no interfiere con tareas críticas de audio
+- **Timeout del Mutex**: Configurado a 100ms para todas las operaciones de lectura
 
 ## Uso de Memoria
 
-- **RAM**: ~500 bytes para buffer circular + overhead del mutex
+- **RAM**: ~500 bytes para buffer circular + mutex + tarea + cola (~2KB total)
 - **Flash**: ~500 bytes por operación de guardado en SPIFFS
-- **Código**: ~8KB de tamaño de código compilado
+- **Código**: ~10KB de tamaño de código compilado
+- **Stack de Tarea**: 4KB para la tarea de guardado asíncrono
 
 ## Ejemplo de Salida
 
@@ -187,8 +197,10 @@ El logger es completamente thread-safe y puede ser llamado desde:
 === LOGGER INFO ===
 Initialized: YES
 Ring buffer size: 20
-Storage: SPIFFS
+Storage: SPIFFS (Async)
 File path: /spiffs/logger_events.bin
+Save task: RUNNING
+Save queue: CREATED
 Ring buffer count: 5
 Ring buffer head: 5
 Total events logged: 15
@@ -224,5 +236,7 @@ Index | Seq# | Event      | Timestamp (μs)
 1. **Comportamiento Circular**: Cuando el buffer está lleno, los nuevos eventos sobrescriben los más antiguos
 2. **Persistencia Limitada**: Solo los últimos 20 eventos se mantienen tanto en RAM como en flash
 3. **Thread Safety**: Todas las operaciones están protegidas por mutex
-4. **Auto-Guardado**: Cada evento se guarda automáticamente a SPIFFS
+4. **Guardado Asíncrono**: Los eventos se guardan en background sin bloquear el audio
 5. **Gestión de Contador**: El contador total se puede resetear manualmente o automáticamente
+6. **Prioridad de Tarea**: La tarea de guardado tiene prioridad 1 (muy baja) para no interferir
+7. **Cola de Guardado**: Si la cola se llena, los comandos se descartan pero no afecta la funcionalidad
