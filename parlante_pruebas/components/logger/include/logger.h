@@ -9,9 +9,9 @@
 extern "C" {
 #endif
 
-#define LOGGER_BUFFER_SIZE 20
+#define LOGGER_RING_BUFFER_SIZE 20
 #define LOGGER_NVS_NAMESPACE "logger_storage"
-#define LOGGER_NVS_KEY_COUNTER "event_counter"
+#define LOGGER_NVS_KEY_RING_BUFFER "ring_buffer"
 
 /**
  * @brief Tipos de eventos de reproducción
@@ -32,6 +32,16 @@ typedef struct {
     uint64_t timestamp;                 // Timestamp del evento (microsegundos desde boot)
     uint32_t sequence_number;           // Número de secuencia del evento
 } logger_event_t;
+
+/**
+ * @brief Estructura del ring buffer para eventos
+ */
+typedef struct {
+    logger_event_t events[LOGGER_RING_BUFFER_SIZE];
+    uint8_t head;                       // Índice del próximo elemento a escribir
+    uint8_t count;                      // Número de elementos actuales
+    uint32_t total_events;              // Total de eventos desde el inicio
+} logger_ring_buffer_t;
 
 /**
  * @brief Inicializa el sistema de logger
@@ -74,6 +84,42 @@ const char* logger_event_type_to_string(logger_event_type_t event_type);
  * @brief Imprime información del logger
  */
 void logger_print_info(void);
+
+/**
+ * @brief Obtiene una copia del ring buffer de eventos
+ * 
+ * @param buffer Puntero donde copiar el ring buffer
+ * @return ESP_OK si se obtuvo exitosamente
+ */
+esp_err_t logger_get_ring_buffer(logger_ring_buffer_t* buffer);
+
+/**
+ * @brief Imprime el historial de eventos del ring buffer
+ */
+void logger_print_event_history(void);
+
+/**
+ * @brief Obtiene un evento específico del ring buffer por índice
+ * 
+ * @param index Índice del evento (0 = más antiguo, count-1 = más reciente)
+ * @param event Puntero donde copiar el evento
+ * @return ESP_OK si se obtuvo exitosamente
+ */
+esp_err_t logger_get_event_by_index(uint8_t index, logger_event_t* event);
+
+/**
+ * @brief Guarda el ring buffer a NVS (útil para persistencia manual)
+ * 
+ * @return ESP_OK si se guardó exitosamente
+ */
+esp_err_t logger_save_ring_buffer_to_nvs(void);
+
+/**
+ * @brief Carga el ring buffer desde NVS
+ * 
+ * @return ESP_OK si se cargó exitosamente
+ */
+esp_err_t logger_load_ring_buffer_from_nvs(void);
 
 #ifdef __cplusplus
 }
