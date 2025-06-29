@@ -2,10 +2,10 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
-#include "protocol_examples_common.h"
+#include "wifi_connection.h"
 #include "esp_log.h"
 
-#define BROKER_URI "mqtt://localhost"
+#define BROKER_URI CONFIG_MQTT_BROKER_URL
 
 static const char *TAG = "main";
 
@@ -19,7 +19,7 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_ERROR_CHECK(example_connect());
+    ESP_ERROR_CHECK(wifi_connect());
 
     ESP_ERROR_CHECK(mqtt_lib_init(BROKER_URI, my_callback));
 }

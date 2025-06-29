@@ -1,29 +1,38 @@
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | -------- | -------- | -------- |
 
-# ESP-MQTT sample application
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+# ESP32 MQTT Application
 
-This example connects to the broker URI selected using `idf.py menuconfig` (using mqtt tcp transport) and as a demonstration subscribes/unsubscribes and send a message on certain topic.
-(Please note that the public broker is maintained by the community so may not be always available, for details please see this [disclaimer](https://iot.eclipse.org/getting-started/#sandboxes))
+This application connects to an MQTT broker and demonstrates subscribing/unsubscribing and publishing messages on specific topics.
 
-Note: If the URI equals `FROM_STDIN` then the broker address is read from stdin upon application startup (used for testing)
+It uses ESP-MQTT library which implements MQTT client to connect to MQTT broker with MQTT version 5.
 
-It uses ESP-MQTT library which implements mqtt client to connect to mqtt broker with MQTT version 5.
+## Components
 
-The more details about MQTT v5, please refer to [official website](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html)
+- **mqtt_lib**: Custom MQTT library wrapper
+- **wifi_connection**: WiFi connection management component
 
-## How to use example
+## Configuration
+
+### WiFi Configuration
+* Configure Wi-Fi settings under "WiFi Connection Configuration" menu using `idf.py menuconfig`
+* Set your WiFi SSID and password
+
+### MQTT Configuration
+* Configure MQTT broker settings under "MQTT Configuration" menu using `idf.py menuconfig`
+* Set the broker URL
+
+## How to use
 
 ### Hardware Required
 
-This example can be executed on any ESP32 board, the only required interface is WiFi and connection to internet.
+This project can be executed on any ESP32 board with WiFi capability and internet connection.
 
 ### Configure the project
 
 * Open the project configuration menu (`idf.py menuconfig`)
-* Configure Wi-Fi or Ethernet under "Example Connection Configuration" menu. See "Establishing Wi-Fi or Ethernet Connection" section in [examples/protocols/README.md](../../README.md) for more details.
-* MQTT v5 protocol (`CONFIG_MQTT_PROTOCOL_5`) under "ESP-MQTT Configurations" menu is enabled by `sdkconfig.defaults`.
+* Configure Wi-Fi under "WiFi Connection Configuration" menu
+* Configure MQTT broker under "MQTT Configuration" menu
 
 ### Build and Flash
 
