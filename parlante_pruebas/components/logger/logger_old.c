@@ -1,9 +1,12 @@
 #include "logger.h"
 #include "esp_log.h"
 #include "esp_system.h"
-#include "esp_spiffs.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 #include "esp_timer.h"
+#include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/ringbuf.h"
 #include "freertos/semphr.h"
 #include <stdio.h>
 #include <inttypes.h>
@@ -16,17 +19,62 @@ static bool g_logger_initialized = false;
 static logger_ring_buffer_t g_ring_buffer;
 static SemaphoreHandle_t g_ring_buffer_mutex;
 
-// Funciones auxiliares privadas
+// Funciones auxiliares privadas - declaraciones
 static void logger_ring_buffer_init(void);
 static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type);
-static esp_err_t logger_init_spiffs(void);
+static esp_err_t logger_save_ring_buffer_blob_to_nvs(void);
+static esp_err_t logger_load_ring_buffer_blob_from_nvs(void);
+
+// Implementación de función auxiliar para guardar (necesaria antes del shutdown handler)
+static esp_err_t logger_save_ring_buffer_blob_to_nvs(void)
+{
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open(LOGGER_NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error opening NVS handle for ring buffer save: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    if (g_ring_buffer_mutex && xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+        ESP_LOGE(TAG, "Failed to acquire mutex for ring buffer save");
+        nvs_close(nvs_handle);
+        return ESP_ERR_TIMEOUT;
+    }
+
+    ESP_LOGI(TAG, "Saving ring buffer to NVS...");
+    ESP_LOGI(TAG, "  - Ring buffer size: %zu bytes", sizeof(logger_ring_buffer_t));
+    ESP_LOGI(TAG, "  - Events count: %d", g_ring_buffer.count);
+    ESP_LOGI(TAG, "  - Head index: %d", g_ring_buffer.head);
+    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
+
+    // Guardar ring buffer como blob
+    err = nvs_set_blob(nvs_handle, LOGGER_NVS_KEY_RING_BUFFER, &g_ring_buffer, sizeof(logger_ring_buffer_t));
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error saving ring buffer blob: %s", esp_err_to_name(err));
+        if (g_ring_buffer_mutex) xSemaphoreGive(g_ring_buffer_mutex);
+        nvs_close(nvs_handle);
+        return err;
+    }
+
+    ESP_LOGI(TAG, "Ring buffer blob set successfully, committing...");
+    err = nvs_commit(nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error committing ring buffer blob: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "Ring buffer saved and committed to NVS successfully!");
+    }
+
+    if (g_ring_buffer_mutex) xSemaphoreGive(g_ring_buffer_mutex);
+    nvs_close(nvs_handle);
+    return err;
+}
 
 // Shutdown handler para guardar automáticamente antes de reset
 static void logger_shutdown_handler(void)
 {
     if (g_logger_initialized) {
-        ESP_LOGI(TAG, "SHUTDOWN: Auto-saving ring buffer to SPIFFS...");
-        esp_err_t err = logger_save_to_file();
+        ESP_LOGI(TAG, "SHUTDOWN: Auto-saving ring buffer to NVS...");
+        esp_err_t err = logger_save_ring_buffer_blob_to_nvs();
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "SHUTDOWN: Failed to save ring buffer: %s", esp_err_to_name(err));
         }
@@ -40,7 +88,7 @@ esp_err_t logger_init(void)
         return ESP_OK;
     }
 
-    ESP_LOGI(TAG, "Initializing logger with SPIFFS storage...");
+    ESP_LOGI(TAG, "Initializing logger with ring buffer...");
 
     // Create mutex for ring buffer protection
     g_ring_buffer_mutex = xSemaphoreCreateMutex();
@@ -49,20 +97,40 @@ esp_err_t logger_init(void)
         return ESP_ERR_NO_MEM;
     }
 
-    // Initialize SPIFFS
-    esp_err_t err = logger_init_spiffs();
+    // Initialize NVS
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        // NVS partition was truncated and needs to be erased
+        // Retry nvs_flash_init
+        ESP_LOGW(TAG, "NVS partition needs to be erased");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize SPIFFS: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Failed to initialize NVS: %s", esp_err_to_name(err));
         vSemaphoreDelete(g_ring_buffer_mutex);
         return err;
     }
 
-    // Set initialized flag before loading from file
-    g_logger_initialized = true;
+    // Open NVS
+    ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle...");
+    nvs_handle_t nvs_handle;
+    err = nvs_open(LOGGER_NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+        vSemaphoreDelete(g_ring_buffer_mutex);
+        return err;
+    }
 
-    // Load ring buffer from SPIFFS
-    ESP_LOGI(TAG, "Loading ring buffer from SPIFFS...");
-    err = logger_load_from_file();
+    ESP_LOGI(TAG, "NVS handle opened successfully");
+
+    // Close NVS handle for now
+    nvs_close(nvs_handle);
+
+    // Load ring buffer from NVS
+    ESP_LOGI(TAG, "Loading ring buffer from NVS...");
+    err = logger_load_ring_buffer_blob_from_nvs();
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Failed to load ring buffer, starting fresh");
         logger_ring_buffer_init();
@@ -72,7 +140,8 @@ esp_err_t logger_init(void)
     esp_register_shutdown_handler(&logger_shutdown_handler);
     ESP_LOGI(TAG, "Shutdown handler registered for auto-save");
 
-    ESP_LOGI(TAG, "Logger initialized successfully with SPIFFS storage");
+    g_logger_initialized = true;
+    ESP_LOGI(TAG, "Logger initialized successfully with ring buffer");
     
     return ESP_OK;
 }
@@ -90,11 +159,11 @@ esp_err_t logger_deinit(void)
     ESP_LOGI(TAG, "  - Head: %d", g_ring_buffer.head);
     ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
 
-    // Save ring buffer to SPIFFS before deinitializing
-    ESP_LOGI(TAG, "Saving ring buffer to SPIFFS during deinit...");
-    esp_err_t err = logger_save_to_file();
+    // Save ring buffer to NVS before deinitializing
+    ESP_LOGI(TAG, "Saving ring buffer to NVS during deinit...");
+    esp_err_t err = logger_save_ring_buffer_blob_to_nvs();
     if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to save ring buffer to SPIFFS during deinit: %s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "Failed to save ring buffer to NVS during deinit: %s", esp_err_to_name(err));
     } else {
         ESP_LOGI(TAG, "Ring buffer saved successfully during deinit");
     }
@@ -109,10 +178,6 @@ esp_err_t logger_deinit(void)
     // Unregister shutdown handler
     esp_unregister_shutdown_handler(&logger_shutdown_handler);
     ESP_LOGI(TAG, "Shutdown handler unregistered");
-
-    // Deinitialize SPIFFS
-    esp_vfs_spiffs_unregister(NULL);
-    ESP_LOGI(TAG, "SPIFFS unregistered");
 
     g_logger_initialized = false;
     ESP_LOGI(TAG, "=== LOGGER DEINITIALIZED ===");
@@ -142,13 +207,13 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
     ESP_LOGI(TAG, "Event logged: %s (total events: %" PRIu32 ")", 
              logger_event_type_to_string(event_type), g_ring_buffer.total_events);
 
-    // Save to SPIFFS after each event (for persistence)
-    ESP_LOGI(TAG, "Saving ring buffer to SPIFFS after event...");
-    err = logger_save_to_file();
+    // TEMPORARY DEBUG: Save immediately after each event to debug persistence
+    ESP_LOGI(TAG, "DEBUG: Saving ring buffer to NVS after event for debugging...");
+    err = logger_save_ring_buffer_blob_to_nvs();
     if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to save ring buffer to SPIFFS: %s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "DEBUG: Failed to save ring buffer to NVS: %s", esp_err_to_name(err));
     } else {
-        ESP_LOGI(TAG, "Ring buffer saved successfully to SPIFFS");
+        ESP_LOGI(TAG, "DEBUG: Ring buffer saved successfully after event");
     }
 
     return ESP_OK;
@@ -184,8 +249,6 @@ void logger_print_info(void)
     printf("\n=== LOGGER INFO ===\n");
     printf("Initialized: %s\n", g_logger_initialized ? "YES" : "NO");
     printf("Ring buffer size: %d\n", LOGGER_RING_BUFFER_SIZE);
-    printf("Storage: SPIFFS\n");
-    printf("File path: %s\n", LOGGER_FILE_PATH);
     
     if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
         printf("Ring buffer count: %d\n", g_ring_buffer.count);
@@ -196,8 +259,12 @@ void logger_print_info(void)
         printf("Ring buffer: [LOCKED]\n");
     }
     
+    printf("NVS Namespace: %s\n", LOGGER_NVS_NAMESPACE);
+    printf("NVS Key Ring Buffer: %s\n", LOGGER_NVS_KEY_RING_BUFFER);
     printf("===================\n\n");
 }
+
+// Nuevas funciones públicas para manejo del ring buffer
 
 esp_err_t logger_get_ring_buffer(logger_ring_buffer_t* buffer)
 {
@@ -294,112 +361,22 @@ esp_err_t logger_get_event_by_index(uint8_t index, logger_event_t* event)
     return ESP_OK;
 }
 
-esp_err_t logger_save_to_file(void)
+esp_err_t logger_save_ring_buffer_to_nvs(void)
 {
     if (!g_logger_initialized) {
-        ESP_LOGE(TAG, "DEBUG: save_to_file called but logger not initialized");
         return ESP_ERR_INVALID_STATE;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Attempting to save ring buffer to file...");
-
-    if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
-        ESP_LOGE(TAG, "Failed to acquire mutex for file save");
-        return ESP_ERR_TIMEOUT;
-    }
-
-    ESP_LOGI(TAG, "DEBUG: Mutex acquired, ring buffer state:");
-    ESP_LOGI(TAG, "  - Ring buffer size: %zu bytes", sizeof(logger_ring_buffer_t));
-    ESP_LOGI(TAG, "  - Events count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head index: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
-
-    if (g_ring_buffer.count > 0) {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer has %d events, showing first event:", g_ring_buffer.count);
-        ESP_LOGI(TAG, "  - Event[0] type: %d", g_ring_buffer.events[0].type);
-        ESP_LOGI(TAG, "  - Event[0] seq: %" PRIu32, g_ring_buffer.events[0].sequence_number);
-    } else {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer is empty, nothing to save");
-    }
-
-    ESP_LOGI(TAG, "DEBUG: Opening file for writing: %s", LOGGER_FILE_PATH);
-    FILE *file = fopen(LOGGER_FILE_PATH, "wb");
-    if (file == NULL) {
-        ESP_LOGE(TAG, "Failed to open file for writing: %s", LOGGER_FILE_PATH);
-        xSemaphoreGive(g_ring_buffer_mutex);
-        return ESP_ERR_NOT_FOUND;
-    }
-
-    ESP_LOGI(TAG, "DEBUG: File opened successfully, writing %zu bytes...", sizeof(logger_ring_buffer_t));
-    size_t written = fwrite(&g_ring_buffer, sizeof(logger_ring_buffer_t), 1, file);
-    fclose(file);
-
-    ESP_LOGI(TAG, "DEBUG: Write operation completed. Items written: %zu (expected: 1)", written);
-
-    if (written != 1) {
-        ESP_LOGE(TAG, "Failed to write ring buffer to file");
-        xSemaphoreGive(g_ring_buffer_mutex);
-        return ESP_FAIL;
-    }
-
-    ESP_LOGI(TAG, "DEBUG: Ring buffer saved successfully to SPIFFS!");
-    xSemaphoreGive(g_ring_buffer_mutex);
-    return ESP_OK;
+    return logger_save_ring_buffer_blob_to_nvs();
 }
 
-esp_err_t logger_load_from_file(void)
+esp_err_t logger_load_ring_buffer_from_nvs(void)
 {
     if (!g_logger_initialized) {
-        ESP_LOGE(TAG, "DEBUG: load_from_file called but logger not initialized");
         return ESP_ERR_INVALID_STATE;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Attempting to load ring buffer from SPIFFS file: %s", LOGGER_FILE_PATH);
-
-    FILE *file = fopen(LOGGER_FILE_PATH, "rb");
-    if (file == NULL) {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer file not found (first run), initializing empty");
-        logger_ring_buffer_init();
-        return ESP_OK;
-    }
-
-    ESP_LOGI(TAG, "DEBUG: File opened successfully, reading %zu bytes...", sizeof(logger_ring_buffer_t));
-    size_t read = fread(&g_ring_buffer, sizeof(logger_ring_buffer_t), 1, file);
-    fclose(file);
-
-    ESP_LOGI(TAG, "DEBUG: Read operation completed. Items read: %zu (expected: 1)", read);
-
-    if (read != 1) {
-        ESP_LOGE(TAG, "Failed to read ring buffer from file");
-        ESP_LOGI(TAG, "Initializing empty ring buffer due to read error");
-        logger_ring_buffer_init();
-        return ESP_FAIL;
-    }
-
-    ESP_LOGI(TAG, "DEBUG: Ring buffer loaded from SPIFFS successfully!");
-    ESP_LOGI(TAG, "DEBUG: Loaded ring buffer state:");
-    ESP_LOGI(TAG, "  - Events count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head index: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
-
-    if (g_ring_buffer.count > 0) {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer has %d events, showing first event:", g_ring_buffer.count);
-        ESP_LOGI(TAG, "  - Event[0] type: %d", g_ring_buffer.events[0].type);
-        ESP_LOGI(TAG, "  - Event[0] seq: %" PRIu32, g_ring_buffer.events[0].sequence_number);
-    }
-
-    // Validar datos cargados
-    if (g_ring_buffer.count > LOGGER_RING_BUFFER_SIZE) {
-        ESP_LOGW(TAG, "Invalid count %d, resetting ring buffer", g_ring_buffer.count);
-        logger_ring_buffer_init();
-    } else if (g_ring_buffer.head >= LOGGER_RING_BUFFER_SIZE) {
-        ESP_LOGW(TAG, "Invalid head %d, resetting ring buffer", g_ring_buffer.head);
-        logger_ring_buffer_init();
-    } else {
-        ESP_LOGI(TAG, "DEBUG: Ring buffer data validation passed");
-    }
-
-    return ESP_OK;
+    return logger_load_ring_buffer_blob_from_nvs();
 }
 
 // Implementaciones de funciones auxiliares privadas
@@ -414,8 +391,6 @@ static void logger_ring_buffer_init(void)
 
 static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
 {
-    ESP_LOGI(TAG, "DEBUG: Adding event to ring buffer: %s", logger_event_type_to_string(event_type));
-    
     if (g_ring_buffer_mutex == NULL) {
         ESP_LOGE(TAG, "Ring buffer mutex not initialized");
         return ESP_ERR_INVALID_STATE;
@@ -426,34 +401,19 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
         return ESP_ERR_TIMEOUT;
     }
 
-    ESP_LOGI(TAG, "DEBUG: Ring buffer state before adding event:");
-    ESP_LOGI(TAG, "  - Count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
-
     // Crear nuevo evento
     logger_event_t new_event;
     new_event.type = event_type;
     new_event.timestamp = esp_timer_get_time();
     new_event.sequence_number = ++g_ring_buffer.total_events;
 
-    ESP_LOGI(TAG, "DEBUG: New event created:");
-    ESP_LOGI(TAG, "  - Type: %d", new_event.type);
-    ESP_LOGI(TAG, "  - Timestamp: %" PRIu64, new_event.timestamp);
-    ESP_LOGI(TAG, "  - Sequence: %" PRIu32, new_event.sequence_number);
-
-    // Agregar al ring buffer (circular)
+    // Agregar al ring buffer
     g_ring_buffer.events[g_ring_buffer.head] = new_event;
     g_ring_buffer.head = (g_ring_buffer.head + 1) % LOGGER_RING_BUFFER_SIZE;
     
     if (g_ring_buffer.count < LOGGER_RING_BUFFER_SIZE) {
         g_ring_buffer.count++;
     }
-
-    ESP_LOGI(TAG, "DEBUG: Ring buffer state after adding event:");
-    ESP_LOGI(TAG, "  - Count: %d", g_ring_buffer.count);
-    ESP_LOGI(TAG, "  - Head: %d", g_ring_buffer.head);
-    ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
 
     xSemaphoreGive(g_ring_buffer_mutex);
     
@@ -465,69 +425,91 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
     return ESP_OK;
 }
 
-static esp_err_t logger_init_spiffs(void)
+static esp_err_t logger_load_ring_buffer_blob_from_nvs(void)
 {
-    ESP_LOGI(TAG, "DEBUG: Initializing SPIFFS...");
-
-    esp_vfs_spiffs_conf_t conf = {
-        .base_path = "/spiffs",
-        .partition_label = NULL,
-        .max_files = 5,
-        .format_if_mount_failed = true
-    };
-
-    ESP_LOGI(TAG, "DEBUG: SPIFFS config:");
-    ESP_LOGI(TAG, "  - Base path: %s", conf.base_path);
-    ESP_LOGI(TAG, "  - Partition label: %s", conf.partition_label ? conf.partition_label : "NULL (default)");
-    ESP_LOGI(TAG, "  - Max files: %d", (int)conf.max_files);
-    ESP_LOGI(TAG, "  - Format if mount failed: %s", conf.format_if_mount_failed ? "YES" : "NO");
-
-    esp_err_t ret = esp_vfs_spiffs_register(&conf);
-
-    if (ret != ESP_OK) {
-        if (ret == ESP_FAIL) {
-            ESP_LOGE(TAG, "Failed to mount or format filesystem");
-        } else if (ret == ESP_ERR_NOT_FOUND) {
-            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
-        } else {
-            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
-        }
-        return ret;
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open(LOGGER_NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error opening NVS handle for ring buffer load: %s", esp_err_to_name(err));
+        return err;
     }
 
-    ESP_LOGI(TAG, "DEBUG: SPIFFS mounted successfully, checking partition info...");
-
-    size_t total = 0, used = 0;
-    ret = esp_spiffs_info(NULL, &total, &used);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+    ESP_LOGI(TAG, "Attempting to load ring buffer from NVS...");
+    
+    size_t required_size = sizeof(logger_ring_buffer_t);
+    ESP_LOGI(TAG, "Expected ring buffer size: %zu bytes", required_size);
+    
+    err = nvs_get_blob(nvs_handle, LOGGER_NVS_KEY_RING_BUFFER, &g_ring_buffer, &required_size);
+    
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGI(TAG, "Ring buffer not found in NVS (first run), initializing empty");
+        logger_ring_buffer_init();
+        err = ESP_OK;
+    } else if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error loading ring buffer from NVS: %s", esp_err_to_name(err));
+        ESP_LOGI(TAG, "Initializing empty ring buffer due to load error");
+        logger_ring_buffer_init();
     } else {
-        ESP_LOGI(TAG, "DEBUG: SPIFFS partition size: total: %d bytes, used: %d bytes, free: %d bytes", 
-                 (int)total, (int)used, (int)(total - used));
-    }
-
-    // Test escribir un archivo simple para verificar que SPIFFS funciona
-    ESP_LOGI(TAG, "DEBUG: Testing SPIFFS write/read...");
-    FILE *test_file = fopen("/spiffs/test.txt", "w");
-    if (test_file != NULL) {
-        fprintf(test_file, "test");
-        fclose(test_file);
-        ESP_LOGI(TAG, "DEBUG: Test file written successfully");
+        ESP_LOGI(TAG, "Ring buffer loaded from NVS successfully!");
+        ESP_LOGI(TAG, "  - Ring buffer size loaded: %zu bytes", required_size);
+        ESP_LOGI(TAG, "  - Events count: %d", g_ring_buffer.count);
+        ESP_LOGI(TAG, "  - Head index: %d", g_ring_buffer.head);
+        ESP_LOGI(TAG, "  - Total events: %" PRIu32, g_ring_buffer.total_events);
         
-        // Leer de vuelta
-        test_file = fopen("/spiffs/test.txt", "r");
-        if (test_file != NULL) {
-            char test_data[10];
-            fgets(test_data, sizeof(test_data), test_file);
-            fclose(test_file);
-            ESP_LOGI(TAG, "DEBUG: Test file read successfully: %s", test_data);
+        // Validar datos cargados
+        if (g_ring_buffer.count > LOGGER_RING_BUFFER_SIZE) {
+            ESP_LOGW(TAG, "Invalid count %d, resetting ring buffer", g_ring_buffer.count);
+            logger_ring_buffer_init();
+        } else if (g_ring_buffer.head >= LOGGER_RING_BUFFER_SIZE) {
+            ESP_LOGW(TAG, "Invalid head %d, resetting ring buffer", g_ring_buffer.head);
+            logger_ring_buffer_init();
         } else {
-            ESP_LOGW(TAG, "DEBUG: Could not read test file");
+            ESP_LOGI(TAG, "Ring buffer data validation passed");
         }
-    } else {
-        ESP_LOGW(TAG, "DEBUG: Could not create test file");
     }
 
-    ESP_LOGI(TAG, "DEBUG: SPIFFS initialized successfully");
-    return ESP_OK;
+    nvs_close(nvs_handle);
+    return err;
+}
+
+// Función de debug para ver qué hay en NVS
+void logger_debug_nvs_info(void)
+{
+    if (!g_logger_initialized) {
+        printf("Logger not initialized for NVS debug\n");
+        return;
+    }
+
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open(LOGGER_NVS_NAMESPACE, NVS_READONLY, &nvs_handle);
+    if (err != ESP_OK) {
+        printf("Failed to open NVS for debug: %s\n", esp_err_to_name(err));
+        return;
+    }
+
+    printf("\n=== NVS DEBUG INFO ===\n");
+    printf("Namespace: %s\n", LOGGER_NVS_NAMESPACE);
+    
+    // Check if ring buffer exists
+    size_t required_size = 0;
+    err = nvs_get_blob(nvs_handle, LOGGER_NVS_KEY_RING_BUFFER, NULL, &required_size);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        printf("Ring buffer key not found in NVS\n");
+    } else if (err == ESP_OK) {
+        printf("Ring buffer found in NVS:\n");
+        printf("  - Key: %s\n", LOGGER_NVS_KEY_RING_BUFFER);
+        printf("  - Size: %zu bytes\n", required_size);
+        printf("  - Expected size: %zu bytes\n", sizeof(logger_ring_buffer_t));
+        
+        if (required_size == sizeof(logger_ring_buffer_t)) {
+            printf("  - Size matches: ✅\n");
+        } else {
+            printf("  - Size mismatch: ❌\n");
+        }
+    } else {
+        printf("Error checking ring buffer: %s\n", esp_err_to_name(err));
+    }
+    
+    printf("======================\n\n");
+    nvs_close(nvs_handle);
 }
