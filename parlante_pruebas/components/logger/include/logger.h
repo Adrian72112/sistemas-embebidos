@@ -1,19 +1,19 @@
 /**
  * @file logger.h
- * @brief ESP32 Audio Event Logger with SPIFFS Persistence
+ * @brief Logger de Eventos de Audio ESP32 con Persistencia SPIFFS
  * 
- * This logger component provides a thread-safe circular buffer for storing
- * audio playback events (play, pause, next, previous, stop) with persistent
- * storage using SPIFFS filesystem and wear leveling.
+ * Este componente logger proporciona un buffer circular thread-safe para almacenar
+ * eventos de reproducción de audio (play, pause, next, previous, stop) con 
+ * almacenamiento persistente usando sistema de archivos SPIFFS y wear leveling.
  * 
- * Features:
- * - Circular ring buffer with 20 event slots
- * - Thread-safe operations using FreeRTOS mutex
- * - Persistent storage in SPIFFS filesystem
- * - Automatic save on system shutdown
- * - Event sequence numbering and timestamps
+ * Características:
+ * - Buffer circular con 20 slots para eventos
+ * - Operaciones thread-safe usando mutex de FreeRTOS
+ * - Almacenamiento persistente en sistema de archivos SPIFFS
+ * - Guardado automático al apagar el sistema
+ * - Numeración secuencial de eventos y timestamps
  * 
- * @author ESP32 Project
+ * @author Proyecto ESP32
  * @version 1.0
  * @date 2025
  */
@@ -25,145 +25,145 @@
 #include <stddef.h>
 #include "esp_err.h"
 
-/* Configuration Constants */
-#define LOGGER_RING_BUFFER_SIZE 20                          ///< Maximum number of events in ring buffer
-#define LOGGER_FILE_PATH "/spiffs/logger_events.bin"        ///< SPIFFS file path for persistence
+/* Constantes de Configuración */
+#define LOGGER_RING_BUFFER_SIZE 20                          ///< Número máximo de eventos en el buffer circular
+#define LOGGER_FILE_PATH "/spiffs/logger_events.bin"        ///< Ruta del archivo SPIFFS para persistencia
 
 /**
- * @brief Audio playback event types
+ * @brief Tipos de eventos de reproducción de audio
  */
 typedef enum {
-    LOGGER_EVENT_PLAY = 0,      ///< Playback started
-    LOGGER_EVENT_PAUSE,         ///< Playback paused
-    LOGGER_EVENT_NEXT,          ///< Next track selected
-    LOGGER_EVENT_PREVIOUS,      ///< Previous track selected
-    LOGGER_EVENT_STOP           ///< Playback stopped
+    LOGGER_EVENT_PLAY = 0,      ///< Reproducción iniciada
+    LOGGER_EVENT_PAUSE,         ///< Reproducción pausada
+    LOGGER_EVENT_NEXT,          ///< Siguiente pista seleccionada
+    LOGGER_EVENT_PREVIOUS,      ///< Pista anterior seleccionada
+    LOGGER_EVENT_STOP           ///< Reproducción detenida
 } logger_event_type_t;
 
 /**
- * @brief Individual event structure
+ * @brief Estructura de evento individual
  */
 typedef struct {
-    logger_event_type_t type;   ///< Event type
-    uint64_t timestamp;         ///< Timestamp in microseconds since boot
-    uint32_t sequence_number;   ///< Global sequence number
+    logger_event_type_t type;   ///< Tipo de evento
+    uint64_t timestamp;         ///< Timestamp en microsegundos desde el arranque
+    uint32_t sequence_number;   ///< Número de secuencia global
 } logger_event_t;
 
 /**
- * @brief Ring buffer structure for storing events
+ * @brief Estructura del buffer circular para almacenar eventos
  */
 typedef struct {
-    logger_event_t events[LOGGER_RING_BUFFER_SIZE];    ///< Array of events
-    uint8_t head;                                       ///< Index for next insertion
-    uint8_t count;                                      ///< Current number of events
-    uint32_t total_events;                             ///< Total events since initialization
+    logger_event_t events[LOGGER_RING_BUFFER_SIZE];    ///< Array de eventos
+    uint8_t head;                                       ///< Índice para la siguiente inserción
+    uint8_t count;                                      ///< Número actual de eventos
+    uint32_t total_events;                             ///< Total de eventos desde la inicialización
 } logger_ring_buffer_t;
 
-/* Public API Functions */
+/* Funciones de API Pública */
 
 /**
- * @brief Initialize the logger system
+ * @brief Inicializar el sistema logger
  * 
- * Initializes SPIFFS filesystem, creates mutex for thread safety,
- * loads existing events from persistent storage, and registers
- * shutdown handler for automatic saving.
+ * Inicializa el sistema de archivos SPIFFS, crea mutex para thread safety,
+ * carga eventos existentes desde almacenamiento persistente, y registra
+ * handler de apagado para guardado automático.
  * 
- * @return ESP_OK on success, error code on failure
+ * @return ESP_OK en éxito, código de error en fallo
  */
 esp_err_t logger_init(void);
 
 /**
- * @brief Deinitialize the logger system
+ * @brief Desinicializar el sistema logger
  * 
- * Saves current ring buffer to persistent storage, cleans up
- * mutex and SPIFFS resources, unregisters shutdown handler.
+ * Guarda el buffer circular actual al almacenamiento persistente, limpia
+ * los recursos del mutex y SPIFFS, desregistra el handler de apagado.
  * 
- * @return ESP_OK on success, error code on failure
+ * @return ESP_OK en éxito, código de error en fallo
  */
 esp_err_t logger_deinit(void);
 
 /**
- * @brief Log an audio playback event
+ * @brief Registrar un evento de reproducción de audio
  * 
- * Adds a new event to the ring buffer with timestamp and sequence number.
- * Automatically saves to persistent storage after each event.
+ * Añade un nuevo evento al buffer circular con timestamp y número de secuencia.
+ * Guarda automáticamente al almacenamiento persistente después de cada evento.
  * 
- * @param event_type Type of audio event to log
- * @return ESP_OK on success, error code on failure
+ * @param event_type Tipo de evento de audio a registrar
+ * @return ESP_OK en éxito, código de error en fallo
  */
 esp_err_t logger_log_event(logger_event_type_t event_type);
 
 /**
- * @brief Get total number of events logged since initialization
+ * @brief Obtener el número total de eventos registrados desde la inicialización
  * 
- * @return Total event count, 0 if logger not initialized
+ * @return Contador total de eventos, 0 si el logger no está inicializado
  */
 uint32_t logger_get_event_count(void);
 
 /**
- * @brief Convert event type to string representation
+ * @brief Convertir tipo de evento a representación de string
  * 
- * @param event_type Event type to convert
- * @return String representation of event type
+ * @param event_type Tipo de evento a convertir
+ * @return Representación en string del tipo de evento
  */
 const char* logger_event_type_to_string(logger_event_type_t event_type);
 
 /**
- * @brief Print logger status and configuration information
+ * @brief Imprimir información de estado y configuración del logger
  */
 void logger_print_info(void);
 
-/* Ring Buffer Access Functions */
+/* Funciones de Acceso al Buffer Circular */
 
 /**
- * @brief Get a copy of the current ring buffer
+ * @brief Obtener una copia del buffer circular actual
  * 
- * Thread-safe operation that copies the entire ring buffer structure.
+ * Operación thread-safe que copia toda la estructura del buffer circular.
  * 
- * @param buffer Pointer to buffer structure to fill
- * @return ESP_OK on success, ESP_ERR_INVALID_ARG if buffer is NULL
+ * @param buffer Puntero a la estructura de buffer a llenar
+ * @return ESP_OK en éxito, ESP_ERR_INVALID_ARG si buffer es NULL
  */
 esp_err_t logger_get_ring_buffer(logger_ring_buffer_t* buffer);
 
 /**
- * @brief Get a specific event by index
+ * @brief Obtener un evento específico por índice
  * 
- * Retrieves an event from the ring buffer by its relative index
- * (0 = oldest event, count-1 = newest event).
+ * Recupera un evento del buffer circular por su índice relativo
+ * (0 = evento más antiguo, count-1 = evento más reciente).
  * 
- * @param index Event index (0 to count-1)
- * @param event Pointer to event structure to fill
- * @return ESP_OK on success, ESP_ERR_NOT_FOUND if index out of range
+ * @param index Índice del evento (0 a count-1)
+ * @param event Puntero a la estructura de evento a llenar
+ * @return ESP_OK en éxito, ESP_ERR_NOT_FOUND si el índice está fuera de rango
  */
 esp_err_t logger_get_event_by_index(uint8_t index, logger_event_t* event);
 
 /**
- * @brief Print complete event history
+ * @brief Imprimir historial completo de eventos
  * 
- * Displays all events in the ring buffer in chronological order
- * with detailed information including timestamps and sequence numbers.
+ * Muestra todos los eventos en el buffer circular en orden cronológico
+ * con información detallada incluyendo timestamps y números de secuencia.
  */
 void logger_print_event_history(void);
 
-/* Persistence Functions */
+/* Funciones de Persistencia */
 
 /**
- * @brief Manually save ring buffer to SPIFFS
+ * @brief Guardar manualmente el buffer circular a SPIFFS
  * 
- * Forces immediate save of current ring buffer state to persistent storage.
- * Normally called automatically after each event and on shutdown.
+ * Fuerza el guardado inmediato del estado actual del buffer circular al almacenamiento persistente.
+ * Normalmente se llama automáticamente después de cada evento y al apagar.
  * 
- * @return ESP_OK on success, error code on failure
+ * @return ESP_OK en éxito, código de error en fallo
  */
 esp_err_t logger_save_to_file(void);
 
 /**
- * @brief Manually load ring buffer from SPIFFS
+ * @brief Cargar manualmente el buffer circular desde SPIFFS
  * 
- * Forces reload of ring buffer from persistent storage.
- * Normally called automatically during initialization.
+ * Fuerza la recarga del buffer circular desde el almacenamiento persistente.
+ * Normalmente se llama automáticamente durante la inicialización.
  * 
- * @return ESP_OK on success, error code on failure
+ * @return ESP_OK en éxito, código de error en fallo
  */
 esp_err_t logger_load_from_file(void);
 

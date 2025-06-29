@@ -1,144 +1,144 @@
-# Logger Component
+# Componente Logger
 
-A thread-safe audio event logger for ESP32 with persistent storage using SPIFFS filesystem.
+Un logger de eventos de audio thread-safe para ESP32 con almacenamiento persistente usando sistema de archivos SPIFFS.
 
-## Features
+## Características
 
-- **Circular Ring Buffer**: Stores the last 20 audio events in a circular buffer
-- **Thread Safety**: Uses FreeRTOS mutex for safe concurrent access
-- **Persistent Storage**: Automatically saves events to SPIFFS filesystem
-- **Wear Leveling**: Built on SPIFFS for flash wear leveling
-- **Auto-Save**: Saves on every event and system shutdown
-- **Event Types**: Supports PLAY, PAUSE, NEXT, PREVIOUS, STOP events
-- **Timestamps**: Each event includes microsecond-precision timestamp
-- **Sequence Numbers**: Global sequence numbering for event ordering
+- **Buffer Circular**: Almacena los últimos 20 eventos de audio en un buffer circular
+- **Thread Safety**: Usa mutex de FreeRTOS para acceso concurrente seguro
+- **Almacenamiento Persistente**: Guarda automáticamente eventos al sistema de archivos SPIFFS
+- **Wear Leveling**: Construido sobre SPIFFS para distribución de desgaste de flash
+- **Auto-Guardado**: Guarda en cada evento y al apagar el sistema
+- **Tipos de Eventos**: Soporta eventos PLAY, PAUSE, NEXT, PREVIOUS, STOP
+- **Timestamps**: Cada evento incluye timestamp con precisión de microsegundos
+- **Números de Secuencia**: Numeración secuencial global para ordenamiento de eventos
 
-## Architecture
+## Arquitectura
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Application   │───▶│  Logger API     │───▶│  Ring Buffer    │
+│   Aplicación    │───▶│  API Logger     │───▶│  Buffer Circular│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                 │                       │
                                 │                       │
                                 ▼                       ▼
                        ┌─────────────────┐    ┌─────────────────┐
-                       │  SPIFFS VFS     │    │  FreeRTOS Mutex │
+                       │  SPIFFS VFS     │    │  Mutex FreeRTOS │
                        └─────────────────┘    └─────────────────┘
                                 │
                                 ▼
                        ┌─────────────────┐
-                       │  Flash Storage  │
+                       │ Almac. Flash    │
                        └─────────────────┘
 ```
 
-## Usage
+## Uso
 
-### Basic Usage
+### Uso Básico
 
 ```c
 #include "logger.h"
 
-// Initialize the logger
+// Inicializar el logger
 esp_err_t err = logger_init();
 if (err != ESP_OK) {
-    ESP_LOGE("APP", "Failed to initialize logger");
+    ESP_LOGE("APP", "Falló al inicializar logger");
     return;
 }
 
-// Log events
+// Registrar eventos
 logger_log_event(LOGGER_EVENT_PLAY);
 logger_log_event(LOGGER_EVENT_PAUSE);
 logger_log_event(LOGGER_EVENT_STOP);
 
-// Print current status
+// Imprimir estado actual
 logger_print_info();
 
-// Print event history
+// Imprimir historial de eventos
 logger_print_event_history();
 
-// Clean shutdown
+// Apagado limpio
 logger_deinit();
 ```
 
-### Advanced Usage
+### Uso Avanzado
 
 ```c
-// Get total event count
+// Obtener contador total de eventos
 uint32_t total_events = logger_get_event_count();
 
-// Get a copy of the ring buffer
+// Obtener una copia del buffer circular
 logger_ring_buffer_t buffer;
 err = logger_get_ring_buffer(&buffer);
 
-// Get specific event by index
+// Obtener evento específico por índice
 logger_event_t event;
-err = logger_get_event_by_index(0, &event); // Get oldest event
+err = logger_get_event_by_index(0, &event); // Obtener evento más antiguo
 
-// Manual save/load (normally automatic)
+// Guardado/carga manual (normalmente automático)
 logger_save_to_file();
 logger_load_from_file();
 ```
 
-## Configuration
+## Configuración
 
-The logger is configured through defines in `logger.h`:
+El logger se configura a través de defines en `logger.h`:
 
-- `LOGGER_RING_BUFFER_SIZE`: Maximum events in buffer (default: 20)
-- `LOGGER_FILE_PATH`: SPIFFS file path (default: "/spiffs/logger_events.bin")
+- `LOGGER_RING_BUFFER_SIZE`: Máximo de eventos en buffer (por defecto: 20)
+- `LOGGER_FILE_PATH`: Ruta del archivo SPIFFS (por defecto: "/spiffs/logger_events.bin")
 
-## Event Types
+## Tipos de Eventos
 
 ```c
 typedef enum {
-    LOGGER_EVENT_PLAY = 0,      // Playback started
-    LOGGER_EVENT_PAUSE,         // Playback paused
-    LOGGER_EVENT_NEXT,          // Next track selected
-    LOGGER_EVENT_PREVIOUS,      // Previous track selected
-    LOGGER_EVENT_STOP           // Playback stopped
+    LOGGER_EVENT_PLAY = 0,      // Reproducción iniciada
+    LOGGER_EVENT_PAUSE,         // Reproducción pausada
+    LOGGER_EVENT_NEXT,          // Siguiente pista seleccionada
+    LOGGER_EVENT_PREVIOUS,      // Pista anterior seleccionada
+    LOGGER_EVENT_STOP           // Reproducción detenida
 } logger_event_type_t;
 ```
 
-## Event Structure
+## Estructura de Eventos
 
 ```c
 typedef struct {
-    logger_event_type_t type;   // Event type
-    uint64_t timestamp;         // Timestamp in microseconds since boot
-    uint32_t sequence_number;   // Global sequence number
+    logger_event_type_t type;   // Tipo de evento
+    uint64_t timestamp;         // Timestamp en microsegundos desde el arranque
+    uint32_t sequence_number;   // Número de secuencia global
 } logger_event_t;
 ```
 
-## Ring Buffer Behavior
+## Comportamiento del Buffer Circular
 
-The ring buffer operates as a circular buffer:
+El buffer circular opera como un buffer circular:
 
-1. **Not Full**: Events are added sequentially from index 0
-2. **Full**: New events overwrite the oldest events (FIFO behavior)
-3. **Indexing**: Index 0 always represents the oldest event in the buffer
-4. **Capacity**: Maximum 20 events (configurable)
+1. **No Lleno**: Los eventos se añaden secuencialmente desde el índice 0
+2. **Lleno**: Los nuevos eventos sobrescriben los eventos más antiguos (comportamiento FIFO)
+3. **Indexación**: El índice 0 siempre representa el evento más antiguo en el buffer
+4. **Capacidad**: Máximo 20 eventos (configurable)
 
-## Dependencies
+## Dependencias
 
-Add to your component's `CMakeLists.txt`:
+Añade a tu `CMakeLists.txt` del componente:
 
 ```cmake
 idf_component_register(
-    SRCS "your_sources.c"
+    SRCS "tus_fuentes.c"
     INCLUDE_DIRS "include"
     REQUIRES logger
 )
 ```
 
-The logger component requires:
-- `spiffs`: SPIFFS filesystem support
-- `wear_levelling`: Flash wear leveling
-- `esp_timer`: High-resolution timer
-- `freertos`: FreeRTOS for mutex support
+El componente logger requiere:
+- `spiffs`: Soporte para sistema de archivos SPIFFS
+- `wear_levelling`: Distribución de desgaste de flash
+- `esp_timer`: Timer de alta resolución
+- `freertos`: FreeRTOS para soporte de mutex
 
-## Partition Table
+## Tabla de Particiones
 
-Ensure your partition table includes a SPIFFS partition:
+Asegúrate de que tu tabla de particiones incluye una partición SPIFFS:
 
 ```csv
 # Name, Type, SubType, Offset, Size, Flags
@@ -148,40 +148,40 @@ factory,  app,  factory, 0x10000, 0x180000,
 spiffs,   data, spiffs,  ,        0x70000,
 ```
 
-## Error Handling
+## Manejo de Errores
 
-All functions return `esp_err_t` status codes:
+Todas las funciones retornan códigos de estado `esp_err_t`:
 
-- `ESP_OK`: Success
-- `ESP_ERR_INVALID_STATE`: Logger not initialized
-- `ESP_ERR_INVALID_ARG`: Invalid argument
-- `ESP_ERR_NO_MEM`: Memory allocation failed
-- `ESP_ERR_TIMEOUT`: Mutex timeout
-- `ESP_ERR_NOT_FOUND`: File operation failed
-- `ESP_FAIL`: General failure
+- `ESP_OK`: Éxito
+- `ESP_ERR_INVALID_STATE`: Logger no inicializado
+- `ESP_ERR_INVALID_ARG`: Argumento inválido
+- `ESP_ERR_NO_MEM`: Falló la asignación de memoria
+- `ESP_ERR_TIMEOUT`: Timeout del mutex
+- `ESP_ERR_NOT_FOUND`: Falló la operación de archivo
+- `ESP_FAIL`: Fallo general
 
 ## Thread Safety
 
-The logger is fully thread-safe and can be called from:
-- Main task
-- FreeRTOS tasks
-- Timer callbacks
-- Interrupt service routines (with caution)
+El logger es completamente thread-safe y puede ser llamado desde:
+- Tarea principal
+- Tareas de FreeRTOS
+- Callbacks de timers
+- Rutinas de servicio de interrupción (con precaución)
 
-## Performance Considerations
+## Consideraciones de Rendimiento
 
-- Each `logger_log_event()` call writes to flash (SPIFFS)
-- For high-frequency logging, consider batching events
-- SPIFFS provides wear leveling but has finite write cycles
-- Mutex timeout is set to 100ms for all operations
+- Cada llamada a `logger_log_event()` escribe a flash (SPIFFS)
+- Para logging de alta frecuencia, considera agrupar eventos
+- SPIFFS provee distribución de desgaste pero tiene ciclos de escritura finitos
+- El timeout del mutex está configurado a 100ms para todas las operaciones
 
-## Memory Usage
+## Uso de Memoria
 
-- **RAM**: ~500 bytes for ring buffer + mutex overhead
-- **Flash**: ~500 bytes per save operation in SPIFFS
-- **Code**: ~8KB compiled code size
+- **RAM**: ~500 bytes para buffer circular + overhead del mutex
+- **Flash**: ~500 bytes por operación de guardado en SPIFFS
+- **Código**: ~8KB de tamaño de código compilado
 
-## Example Output
+## Ejemplo de Salida
 
 ```
 === LOGGER INFO ===
@@ -196,10 +196,11 @@ Total events logged: 15
 
 === EVENT HISTORY ===
 Ring buffer capacity: 20
-Current count: 5
-Total events since init: 15
+Current count: 5 (only last 20 events stored)
+Total events since init: 15 (counter only)
+Storage: Only last 20 events are persisted to flash
 
-Events (oldest to newest):
+Events stored in memory (oldest to newest):
 Index | Seq# | Event      | Timestamp (μs)
 ------|------|------------|----------------
     0 |   11 | PLAY       |      12345678901
@@ -209,3 +210,19 @@ Index | Seq# | Event      | Timestamp (μs)
     4 |   15 | STOP       |      12345912345
 ======================
 ```
+
+## Limitaciones de Almacenamiento
+
+- **Buffer en RAM**: Solo mantiene los últimos 20 eventos en memoria
+- **Persistencia en Flash**: Solo se guardan los últimos 20 eventos al archivo SPIFFS
+- **Contador Global**: `total_events` es solo un contador, no indica cuántos eventos están almacenados
+- **Auto-Reset**: El contador se resetea automáticamente cuando supera 10,000 para prevenir overflow
+- **Gestión de Espacio**: El sistema garantiza que nunca se almacenen más de 20 eventos en flash
+
+## Notas Importantes
+
+1. **Comportamiento Circular**: Cuando el buffer está lleno, los nuevos eventos sobrescriben los más antiguos
+2. **Persistencia Limitada**: Solo los últimos 20 eventos se mantienen tanto en RAM como en flash
+3. **Thread Safety**: Todas las operaciones están protegidas por mutex
+4. **Auto-Guardado**: Cada evento se guarda automáticamente a SPIFFS
+5. **Gestión de Contador**: El contador total se puede resetear manualmente o automáticamente

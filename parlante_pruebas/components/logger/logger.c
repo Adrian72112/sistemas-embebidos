@@ -29,6 +29,7 @@ static SemaphoreHandle_t g_ring_buffer_mutex;
 static void logger_ring_buffer_init(void);
 static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type);
 static esp_err_t logger_init_spiffs(void);
+static void logger_trim_total_events_if_needed(void);
 
 // Shutdown handler para guardar automáticamente antes de reset
 static void logger_shutdown_handler(void)
@@ -135,8 +136,14 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
         return err;
     }
 
-    ESP_LOGI(TAG, "Event logged: %s (total: %" PRIu32 ")", 
-             logger_event_type_to_string(event_type), g_ring_buffer.total_events);
+    ESP_LOGI(TAG, "Event logged: %s (buffer: %d/%d, total: %" PRIu32 ")", 
+             logger_event_type_to_string(event_type), 
+             g_ring_buffer.count, 
+             LOGGER_RING_BUFFER_SIZE,
+             g_ring_buffer.total_events);
+
+    // Trim total events counter periodically to prevent overflow
+    logger_trim_total_events_if_needed();
 
     // Save to SPIFFS after each event for persistence
     err = logger_save_to_file();
@@ -223,13 +230,14 @@ void logger_print_event_history(void)
 
     printf("\n=== EVENT HISTORY ===\n");
     printf("Ring buffer capacity: %d\n", LOGGER_RING_BUFFER_SIZE);
-    printf("Current count: %d\n", g_ring_buffer.count);
-    printf("Total events since init: %" PRIu32 "\n", g_ring_buffer.total_events);
+    printf("Current count: %d (only last %d events stored)\n", g_ring_buffer.count, LOGGER_RING_BUFFER_SIZE);
+    printf("Total events since init: %" PRIu32 " (counter only)\n", g_ring_buffer.total_events);
+    printf("Storage: Only last %d events are persisted to flash\n", LOGGER_RING_BUFFER_SIZE);
     
     if (g_ring_buffer.count == 0) {
         printf("No events in history\n");
     } else {
-        printf("\nEvents (oldest to newest):\n");
+        printf("\nEvents stored in memory (oldest to newest):\n");
         printf("Index | Seq# | Event      | Timestamp (μs)\n");
         printf("------|------|------------|----------------\n");
         
@@ -298,6 +306,17 @@ esp_err_t logger_save_to_file(void)
         return ESP_ERR_TIMEOUT;
     }
 
+    // Create a copy of the ring buffer to ensure we only save the last 20 events
+    logger_ring_buffer_t save_buffer;
+    memcpy(&save_buffer, &g_ring_buffer, sizeof(logger_ring_buffer_t));
+    
+    // Ensure we never save more than LOGGER_RING_BUFFER_SIZE events
+    if (save_buffer.count > LOGGER_RING_BUFFER_SIZE) {
+        ESP_LOGW(TAG, "Ring buffer count (%d) exceeds max size (%d), trimming to last %d events", 
+                 save_buffer.count, LOGGER_RING_BUFFER_SIZE, LOGGER_RING_BUFFER_SIZE);
+        save_buffer.count = LOGGER_RING_BUFFER_SIZE;
+    }
+
     FILE *file = fopen(LOGGER_FILE_PATH, "wb");
     if (file == NULL) {
         ESP_LOGE(TAG, "Failed to open file for writing: %s", LOGGER_FILE_PATH);
@@ -305,7 +324,7 @@ esp_err_t logger_save_to_file(void)
         return ESP_ERR_NOT_FOUND;
     }
 
-    size_t written = fwrite(&g_ring_buffer, sizeof(logger_ring_buffer_t), 1, file);
+    size_t written = fwrite(&save_buffer, sizeof(logger_ring_buffer_t), 1, file);
     fclose(file);
 
     if (written != 1) {
@@ -324,31 +343,75 @@ esp_err_t logger_load_from_file(void)
         return ESP_ERR_INVALID_STATE;
     }
 
+    if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+        ESP_LOGE(TAG, "Failed to acquire mutex for file load");
+        return ESP_ERR_TIMEOUT;
+    }
+
     FILE *file = fopen(LOGGER_FILE_PATH, "rb");
     if (file == NULL) {
-        // File not found - first run, initialize empty
+        ESP_LOGI(TAG, "No previous log file found, starting fresh");
         logger_ring_buffer_init();
+        xSemaphoreGive(g_ring_buffer_mutex);
         return ESP_OK;
     }
 
-    size_t read = fread(&g_ring_buffer, sizeof(logger_ring_buffer_t), 1, file);
+    logger_ring_buffer_t loaded_buffer;
+    size_t read = fread(&loaded_buffer, sizeof(logger_ring_buffer_t), 1, file);
     fclose(file);
 
     if (read != 1) {
         ESP_LOGE(TAG, "Failed to read ring buffer from file");
         logger_ring_buffer_init();
+        xSemaphoreGive(g_ring_buffer_mutex);
         return ESP_FAIL;
     }
 
-    // Validate loaded data
-    if (g_ring_buffer.count > LOGGER_RING_BUFFER_SIZE) {
-        ESP_LOGW(TAG, "Invalid count %d, resetting ring buffer", g_ring_buffer.count);
+    // Validate loaded data and enforce 20-event limit
+    if (loaded_buffer.count > LOGGER_RING_BUFFER_SIZE) {
+        ESP_LOGW(TAG, "Loaded buffer has %d events, trimming to last %d events", 
+                 loaded_buffer.count, LOGGER_RING_BUFFER_SIZE);
+        
+        // Trim to keep only the last LOGGER_RING_BUFFER_SIZE events
+        // Calculate how many events to skip
+        uint32_t events_to_skip = loaded_buffer.count - LOGGER_RING_BUFFER_SIZE;
+        
+        // Create new buffer with only the last 20 events
+        logger_ring_buffer_t trimmed_buffer = {0};
+        
+        for (uint32_t i = 0; i < LOGGER_RING_BUFFER_SIZE; i++) {
+            uint32_t source_index = (loaded_buffer.head + events_to_skip + i) % LOGGER_RING_BUFFER_SIZE;
+            trimmed_buffer.events[i] = loaded_buffer.events[source_index];
+        }
+        
+        trimmed_buffer.count = LOGGER_RING_BUFFER_SIZE;
+        trimmed_buffer.head = 0;
+        
+        // Copy the trimmed buffer to the global buffer
+        memcpy(&g_ring_buffer, &trimmed_buffer, sizeof(logger_ring_buffer_t));
+        
+        ESP_LOGI(TAG, "Trimmed log buffer to %d events", LOGGER_RING_BUFFER_SIZE);
+        
+        // Save the trimmed buffer back to file to ensure persistence matches memory
+        xSemaphoreGive(g_ring_buffer_mutex);
+        esp_err_t save_result = logger_save_to_file();
+        if (save_result != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to save trimmed buffer back to file");
+        }
+        return ESP_OK;
+        
+    } else if (loaded_buffer.head >= LOGGER_RING_BUFFER_SIZE) {
+        ESP_LOGW(TAG, "Invalid head %d, resetting ring buffer", loaded_buffer.head);
         logger_ring_buffer_init();
-    } else if (g_ring_buffer.head >= LOGGER_RING_BUFFER_SIZE) {
-        ESP_LOGW(TAG, "Invalid head %d, resetting ring buffer", g_ring_buffer.head);
-        logger_ring_buffer_init();
+        xSemaphoreGive(g_ring_buffer_mutex);
+        return ESP_OK;
     }
 
+    // Copy the loaded buffer directly (it's within limits)
+    memcpy(&g_ring_buffer, &loaded_buffer, sizeof(logger_ring_buffer_t));
+    ESP_LOGI(TAG, "Loaded %d events from file", loaded_buffer.count);
+
+    xSemaphoreGive(g_ring_buffer_mutex);
     return ESP_OK;
 }
 
@@ -388,6 +451,9 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
         g_ring_buffer.count++;
     }
 
+    // Trim the total events counter if it gets too large
+    logger_trim_total_events_if_needed();
+
     xSemaphoreGive(g_ring_buffer_mutex);
     
     return ESP_OK;
@@ -426,4 +492,31 @@ static esp_err_t logger_init_spiffs(void)
     }
 
     return ESP_OK;
+}
+
+// Helper function to trim total events counter when it gets too large
+static void logger_trim_total_events_if_needed(void)
+{
+    // Reset total_events counter when it gets too large to prevent overflow
+    // This doesn't affect the actual stored events, just the counter
+    if (g_ring_buffer.total_events > 10000) {
+        ESP_LOGW(TAG, "Resetting total events counter (was %" PRIu32 "), only affects counter, not stored events", 
+                 g_ring_buffer.total_events);
+        
+        // Reset the counter but keep the sequence numbers in the ring buffer intact
+        g_ring_buffer.total_events = g_ring_buffer.count;
+        
+        // Update sequence numbers to be sequential starting from 1
+        for (int i = 0; i < g_ring_buffer.count; i++) {
+            int actual_index;
+            if (g_ring_buffer.count < LOGGER_RING_BUFFER_SIZE) {
+                actual_index = i;
+            } else {
+                actual_index = (g_ring_buffer.head + i) % LOGGER_RING_BUFFER_SIZE;
+            }
+            g_ring_buffer.events[actual_index].sequence_number = i + 1;
+        }
+        
+        ESP_LOGI(TAG, "Total events counter reset to %" PRIu32, g_ring_buffer.total_events);
+    }
 }
