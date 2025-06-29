@@ -138,7 +138,7 @@ void app_main(void)
         ESP_LOGI(TAG, "Audio logger initialized successfully");
         
         // Print logger info
-        logger_print_info();
+        logger_print_event_history();
     } else {
         ESP_LOGW(TAG, "Continuing without logger");
     }
