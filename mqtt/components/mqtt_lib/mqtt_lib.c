@@ -6,17 +6,17 @@
 static const char *TAG = "mqtt_lib";
 static mqtt_message_callback_t user_callback = NULL;
 
-static void mqtt_event_handler(void *args, esp_event_base_t base, int32_t event_id, void *event_data)
+static void mqtt_event_handler(void *args, esp_event_base_t base, int32_t event_id, void *event_data)//tiene como parametros (args,base,event_id,event_data)
 {
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
 
-    switch ((esp_mqtt_event_id_t)event_id) {
+    switch ((esp_mqtt_event_id_t)event_id) {//mismo case que antes solo tengo dos eventos, caso conectado y 
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "Connected");
-            esp_mqtt_client_subscribe(client, "/topic/qos1", 1);
+            esp_mqtt_client_subscribe(client, "/topic/qos1", 1); //en el caso de estar conectado se suscribe
             break;
-        case MQTT_EVENT_DATA:
+        case MQTT_EVENT_DATA: //evento que ocurre al recibir un mensaje 
             ESP_LOGI(TAG, "Message received on topic: %.*s", event->topic_len, event->topic);
             ESP_LOGI(TAG, "Data: %.*s", event->data_len, event->data);
             if (user_callback) {
@@ -34,7 +34,7 @@ static void mqtt_event_handler(void *args, esp_event_base_t base, int32_t event_
     }
 }
 
-esp_err_t mqtt_lib_init(const char *broker_uri, mqtt_message_callback_t callback)
+esp_err_t mqtt_lib_init(const char *broker_uri, mqtt_message_callback_t callback)//funcion en si
 {
     if (!broker_uri || !callback) return ESP_ERR_INVALID_ARG;
 
