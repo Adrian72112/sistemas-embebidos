@@ -1,10 +1,4 @@
-/*
- * SPDX-FileCopyrightText: 2024 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
- */
-
-#include "audio_controler.h"
+#include "audio_controller.h"
 #include "i2s_driver.h"
 #include "es8311_codec.h" 
 #include "logger.h"
@@ -13,32 +7,43 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "freertos/queue.h"
 #include <string.h>
 
 static const char *TAG = "audio_controller";
 
-// Private variables
+#define AUDIO_EVENT_QUEUE_SIZE 10
+#define AUDIO_EVENT_TASK_STACK_SIZE 4096
+#define AUDIO_EVENT_TASK_PRIORITY 5
+
+// Variables privadas
 static i2s_chan_handle_t tx_handle = NULL;
 static i2s_chan_handle_t rx_handle = NULL;
 static bool is_initialized = false;
 
-// Playlist variables
+// Variables de lista de reproducción
 static audio_track_t *playlist = NULL;
 static size_t playlist_size = 0;
 static int current_track_index = 0;
 
-// Task control
+// Control de tareas
 static TaskHandle_t audio_task_handle = NULL;
 static SemaphoreHandle_t player_mutex = NULL;
+static QueueHandle_t event_queue = NULL;
 static bool stop_current_track = false;
 static bool is_paused = false;
 
-// Forward declarations
+// Declaraciones anticipadas
 static void audio_play_task(void *args);
+static void audio_event_task(void *args);
+static esp_err_t audio_controller_play_internal(void);
+static esp_err_t audio_controller_pause_internal(void);
+static esp_err_t audio_controller_next_internal(void);
+static esp_err_t audio_controller_previous_internal(void);
 
 esp_err_t audio_controller_init(const audio_controller_config_t *config)
 {
-    ESP_LOGI(TAG, "Initializing minimal audio controller");
+    ESP_LOGI(TAG, "Initializing audio controller with event queue system");
     
     if (is_initialized) {
         ESP_LOGW(TAG, "Already initialized");
@@ -47,26 +52,41 @@ esp_err_t audio_controller_init(const audio_controller_config_t *config)
     
     ESP_RETURN_ON_FALSE(config, ESP_ERR_INVALID_ARG, TAG, "Config cannot be NULL");
     
-    // Create mutex
+    // Crear mutex
     player_mutex = xSemaphoreCreateMutex();
     ESP_RETURN_ON_FALSE(player_mutex, ESP_ERR_NO_MEM, TAG, "Failed to create mutex");
     
-    // Initialize logger
+    // Crear cola de eventos
+    event_queue = xQueueCreate(AUDIO_EVENT_QUEUE_SIZE, sizeof(audio_event_t));
+    ESP_RETURN_ON_FALSE(event_queue, ESP_ERR_NO_MEM, TAG, "Failed to create event queue");
+    
+    // Crear tarea de procesamiento de eventos
+    BaseType_t result = xTaskCreate(
+        audio_event_task,
+        "audio_event",
+        AUDIO_EVENT_TASK_STACK_SIZE,
+        NULL,
+        AUDIO_EVENT_TASK_PRIORITY,
+        NULL
+    );
+    ESP_RETURN_ON_FALSE(result == pdPASS, ESP_FAIL, TAG, "Failed to create event task");
+    
+    // Inicializar logger
     esp_err_t ret = logger_init();
     if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Logger init failed: %s", esp_err_to_name(ret));
     }
     
-    // Initialize I2S driver
+    // Inicializar driver I2S
     ESP_RETURN_ON_ERROR(i2s_driver_init(config->sample_rate, &tx_handle, &rx_handle), 
                        TAG, "Failed to initialize I2S driver");
     
-    // Initialize ES8311 codec
+    // Inicializar codec ES8311
     ESP_RETURN_ON_ERROR(es8311_codec_init(config->sample_rate, config->volume, config->microphone_enabled),
                        TAG, "Failed to initialize ES8311 codec");
     
     is_initialized = true;
-    ESP_LOGI(TAG, "Audio controller initialized successfully");
+    ESP_LOGI(TAG, "Audio controller initialized successfully with event system");
     return ESP_OK;
 }
 
@@ -79,12 +99,12 @@ esp_err_t audio_controller_load_playlist(const audio_track_t *tracks, size_t num
         return ESP_ERR_TIMEOUT;
     }
     
-    // Free existing playlist
+    // Liberar lista de reproducción existente
     if (playlist) {
         free(playlist);
     }
     
-    // Allocate and copy new playlist
+    // Asignar y copiar nueva lista de reproducción
     playlist = malloc(sizeof(audio_track_t) * num_tracks);
     if (!playlist) {
         xSemaphoreGive(player_mutex);
@@ -101,7 +121,76 @@ esp_err_t audio_controller_load_playlist(const audio_track_t *tracks, size_t num
     return ESP_OK;
 }
 
-esp_err_t audio_controller_play(void)
+esp_err_t audio_controller_send_event(audio_event_type_t event_type)
+{
+    ESP_RETURN_ON_FALSE(is_initialized, ESP_ERR_INVALID_STATE, TAG, "Not initialized");
+    ESP_RETURN_ON_FALSE(event_type < AUDIO_EVENT_MAX, ESP_ERR_INVALID_ARG, TAG, "Invalid event type");
+    
+    audio_event_t event = {
+        .type = event_type,
+        .timestamp = xTaskGetTickCount()
+    };
+    
+    BaseType_t result = xQueueSend(event_queue, &event, pdMS_TO_TICKS(100));
+    if (result != pdPASS) {
+        ESP_LOGW(TAG, "Failed to send event to queue (queue full?)");
+        return ESP_ERR_TIMEOUT;
+    }
+    
+    ESP_LOGD(TAG, "Event %d sent to queue", event_type);
+    return ESP_OK;
+}
+
+// =============================================================================
+// IMPLEMENTACIONES DE TAREAS PRIVADAS
+// =============================================================================
+
+static void audio_event_task(void *args)
+{
+    ESP_LOGI(TAG, "🎛️ Audio event task started");
+    
+    audio_event_t event;
+    
+    while (1) {
+        // Esperar eventos de la cola
+        if (xQueueReceive(event_queue, &event, portMAX_DELAY) == pdTRUE) {
+            ESP_LOGD(TAG, "Processing event: %d", event.type);
+            
+            switch (event.type) {
+                case AUDIO_EVENT_PLAY:
+                    ESP_LOGI(TAG, "🎵 Processing PLAY event");
+                    audio_controller_play_internal();
+                    break;
+                    
+                case AUDIO_EVENT_PAUSE:
+                    ESP_LOGI(TAG, "⏸️ Processing PAUSE event");
+                    audio_controller_pause_internal();
+                    break;
+                    
+                case AUDIO_EVENT_NEXT:
+                    ESP_LOGI(TAG, "⏭️ Processing NEXT event");
+                    audio_controller_next_internal();
+                    break;
+                    
+                case AUDIO_EVENT_PREVIOUS:
+                    ESP_LOGI(TAG, "⏮️ Processing PREVIOUS event");
+                    audio_controller_previous_internal();
+                    break;
+                    
+                case AUDIO_EVENT_STOP:
+                    ESP_LOGI(TAG, "⏹️ Processing STOP event");
+                    // Implementar stop si es necesario
+                    break;
+                    
+                default:
+                    ESP_LOGW(TAG, "Unknown event type: %d", event.type);
+                    break;
+            }
+        }
+    }
+}
+
+static esp_err_t audio_controller_play_internal(void)
 {
     ESP_RETURN_ON_FALSE(is_initialized, ESP_ERR_INVALID_STATE, TAG, "Not initialized");
     ESP_RETURN_ON_FALSE(playlist && playlist_size > 0, ESP_ERR_INVALID_STATE, TAG, "No playlist");
@@ -110,7 +199,7 @@ esp_err_t audio_controller_play(void)
         return ESP_ERR_TIMEOUT;
     }
     
-    // Stop current track if playing
+    // Detener pista actual si está reproduciéndose
     stop_current_track = true;
     if (audio_task_handle) {
         xSemaphoreGive(player_mutex);
@@ -156,7 +245,7 @@ esp_err_t audio_controller_play(void)
     return ESP_OK;
 }
 
-esp_err_t audio_controller_pause(void)
+static esp_err_t audio_controller_pause_internal(void)
 {
     ESP_RETURN_ON_FALSE(is_initialized, ESP_ERR_INVALID_STATE, TAG, "Not initialized");
     
@@ -190,7 +279,7 @@ esp_err_t audio_controller_pause(void)
     return ESP_OK;
 }
 
-esp_err_t audio_controller_next(void)
+static esp_err_t audio_controller_next_internal(void)
 {
     ESP_RETURN_ON_FALSE(is_initialized, ESP_ERR_INVALID_STATE, TAG, "Not initialized");
     ESP_RETURN_ON_FALSE(playlist && playlist_size > 0, ESP_ERR_INVALID_STATE, TAG, "No playlist");
@@ -255,7 +344,7 @@ esp_err_t audio_controller_next(void)
     return ESP_OK;
 }
 
-esp_err_t audio_controller_previous(void)
+static esp_err_t audio_controller_previous_internal(void)
 {
     ESP_RETURN_ON_FALSE(is_initialized, ESP_ERR_INVALID_STATE, TAG, "Not initialized");
     ESP_RETURN_ON_FALSE(playlist && playlist_size > 0, ESP_ERR_INVALID_STATE, TAG, "No playlist");
@@ -319,10 +408,6 @@ esp_err_t audio_controller_previous(void)
     
     return ESP_OK;
 }
-
-// =============================================================================
-// PRIVATE TASK IMPLEMENTATION
-// =============================================================================
 
 static void audio_play_task(void *args)
 {

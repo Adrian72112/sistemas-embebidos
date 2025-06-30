@@ -1,17 +1,26 @@
-/*
- * SPDX-FileCopyrightText: 2024 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
- */
-
-#pragma once
-
 #include "esp_err.h"
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
+/**
+ * @brief Tipos de eventos de audio
+ */
+typedef enum {
+    AUDIO_EVENT_PLAY,       /*!< Evento de reproducción */
+    AUDIO_EVENT_PAUSE,      /*!< Evento de pausa */
+    AUDIO_EVENT_NEXT,       /*!< Evento de siguiente pista */
+    AUDIO_EVENT_PREVIOUS,   /*!< Evento de pista anterior */
+    AUDIO_EVENT_STOP,       /*!< Evento de detener */
+    AUDIO_EVENT_MAX         /*!< Marcador de eventos máximos */
+} audio_event_type_t;
+
+/**
+ * @brief Estructura de evento de audio
+ */
+typedef struct {
+    audio_event_type_t type;    /*!< Tipo de evento */
+    uint32_t timestamp;         /*!< Timestamp del evento (opcional) */
+} audio_event_t;
 
 /**
  * @brief Estructura de pista de audio
@@ -58,33 +67,9 @@ esp_err_t audio_controller_init(const audio_controller_config_t *config);
 esp_err_t audio_controller_load_playlist(const audio_track_t *tracks, size_t num_tracks);
 
 /**
- * @brief Reproducir pista actual o reanudar reproducción
+ * @brief Enviar evento al controlador de audio
  * 
+ * @param event_type Tipo de evento a enviar
  * @return esp_err_t ESP_OK en caso de éxito
  */
-esp_err_t audio_controller_play(void);
-
-/**
- * @brief Pausar pista actual
- * 
- * @return esp_err_t ESP_OK en caso de éxito
- */
-esp_err_t audio_controller_pause(void);
-
-/**
- * @brief Saltar a la siguiente pista
- * 
- * @return esp_err_t ESP_OK en caso de éxito
- */
-esp_err_t audio_controller_next(void);
-
-/**
- * @brief Ir a la pista anterior
- * 
- * @return esp_err_t ESP_OK en caso de éxito
- */
-esp_err_t audio_controller_previous(void);
-
-#ifdef __cplusplus
-}
-#endif
+esp_err_t audio_controller_send_event(audio_event_type_t event_type);

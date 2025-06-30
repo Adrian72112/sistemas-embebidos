@@ -108,11 +108,6 @@ uint32_t logger_get_event_count(void);
  */
 const char* logger_event_type_to_string(logger_event_type_t event_type);
 
-/**
- * @brief Imprimir información de estado y configuración del logger
- */
-void logger_print_info(void);
-
 /* Funciones de Acceso al Buffer Circular */
 
 /**
@@ -136,14 +131,6 @@ esp_err_t logger_get_ring_buffer(logger_ring_buffer_t* buffer);
  * @return ESP_OK en éxito, ESP_ERR_NOT_FOUND si el índice está fuera de rango
  */
 esp_err_t logger_get_event_by_index(uint8_t index, logger_event_t* event);
-
-/**
- * @brief Imprimir historial completo de eventos
- * 
- * Muestra todos los eventos en el buffer circular en orden cronológico
- * con información detallada incluyendo timestamps y números de secuencia.
- */
-void logger_print_event_history(void);
 
 /* Funciones de Persistencia */
 

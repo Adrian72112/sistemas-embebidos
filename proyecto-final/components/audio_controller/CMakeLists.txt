@@ -1,4 +1,4 @@
-idf_component_register(SRCS "audio_controler.c"
+idf_component_register(SRCS "audio_controller.c"
                            "i2s_driver.c"
                            "es8311_codec.c"
                     INCLUDE_DIRS "include"

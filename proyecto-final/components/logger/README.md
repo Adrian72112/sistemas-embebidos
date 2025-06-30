@@ -58,12 +58,6 @@ logger_log_event(LOGGER_EVENT_PLAY);
 logger_log_event(LOGGER_EVENT_PAUSE);
 logger_log_event(LOGGER_EVENT_STOP);
 
-// Imprimir estado actual
-logger_print_info();
-
-// Imprimir historial de eventos
-logger_print_event_history();
-
 // Apagado limpio
 logger_deinit();
 ```

@@ -2,7 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-#include "audio_controler.h"
+#include "audio_controller.h"
 #include "mqtt_lib.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
@@ -44,31 +44,31 @@ void my_callback(const char *topic, const char *data, int len)
     
     // Procesar comandos de audio
     if (strcmp(command, "play") == 0) {
-        ESP_LOGI(TAG, "▶️ Comando: PLAY - Iniciando reproducción");
-        esp_err_t ret = audio_controller_play();
+        ESP_LOGI(TAG, "▶️ Comando: PLAY - Enviando evento");
+        esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Error al reproducir: %s", esp_err_to_name(ret));
+            ESP_LOGE(TAG, "Error al enviar evento PLAY: %s", esp_err_to_name(ret));
         }
     }
     else if (strcmp(command, "pause") == 0) {
-        ESP_LOGI(TAG, "⏸️ Comando: PAUSE - Pausando reproducción");
-        esp_err_t ret = audio_controller_pause();
+        ESP_LOGI(TAG, "⏸️ Comando: PAUSE - Enviando evento");
+        esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Error al pausar: %s", esp_err_to_name(ret));
+            ESP_LOGE(TAG, "Error al enviar evento PAUSE: %s", esp_err_to_name(ret));
         }
     }
     else if (strcmp(command, "next") == 0) {
-        ESP_LOGI(TAG, "⏭️ Comando: NEXT - Siguiente pista");
-        esp_err_t ret = audio_controller_next();
+        ESP_LOGI(TAG, "⏭️ Comando: NEXT - Enviando evento");
+        esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_NEXT);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Error al cambiar pista: %s", esp_err_to_name(ret));
+            ESP_LOGE(TAG, "Error al enviar evento NEXT: %s", esp_err_to_name(ret));
         }
     }
     else if (strcmp(command, "previous") == 0) {
-        ESP_LOGI(TAG, "⏮️ Comando: PREVIOUS - Pista anterior");
-        esp_err_t ret = audio_controller_previous();
+        ESP_LOGI(TAG, "⏮️ Comando: PREVIOUS - Enviando evento");
+        esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PREVIOUS);
         if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Error al cambiar pista: %s", esp_err_to_name(ret));
+            ESP_LOGE(TAG, "Error al enviar evento PREVIOUS: %s", esp_err_to_name(ret));
         }
     }
     else {

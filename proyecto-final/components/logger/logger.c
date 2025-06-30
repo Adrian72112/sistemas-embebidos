@@ -207,33 +207,6 @@ const char* logger_event_type_to_string(logger_event_type_t event_type)
     }
 }
 
-void logger_print_info(void)
-{
-    if (!g_logger_initialized) {
-        printf("Logger not initialized\n");
-        return;
-    }
-
-    printf("\n=== LOGGER INFO ===\n");
-    printf("Initialized: %s\n", g_logger_initialized ? "YES" : "NO");
-    printf("Ring buffer size: %d\n", LOGGER_RING_BUFFER_SIZE);
-    printf("Storage: SPIFFS (Async)\n");
-    printf("File path: %s\n", LOGGER_FILE_PATH);
-    printf("Save task: %s\n", (g_save_task_handle != NULL) ? "RUNNING" : "STOPPED");
-    printf("Save queue: %s\n", (g_save_queue != NULL) ? "CREATED" : "NOT CREATED");
-    
-    if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-        printf("Ring buffer count: %d\n", g_ring_buffer.count);
-        printf("Ring buffer head: %d\n", g_ring_buffer.head);
-        printf("Total events logged: %" PRIu32 "\n", g_ring_buffer.total_events);
-        xSemaphoreGive(g_ring_buffer_mutex);
-    } else {
-        printf("Ring buffer: [LOCKED]\n");
-    }
-    
-    printf("===================\n\n");
-}
-
 esp_err_t logger_get_ring_buffer(logger_ring_buffer_t* buffer)
 {
     if (!g_logger_initialized || buffer == NULL) {
@@ -249,54 +222,6 @@ esp_err_t logger_get_ring_buffer(logger_ring_buffer_t* buffer)
     xSemaphoreGive(g_ring_buffer_mutex);
     
     return ESP_OK;
-}
-
-void logger_print_event_history(void)
-{
-    if (!g_logger_initialized) {
-        printf("Logger not initialized\n");
-        return;
-    }
-
-    if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
-        printf("Failed to acquire ring buffer lock\n");
-        return;
-    }
-
-    printf("\n=== EVENT HISTORY ===\n");
-    printf("Ring buffer capacity: %d\n", LOGGER_RING_BUFFER_SIZE);
-    printf("Current count: %d (only last %d events stored)\n", g_ring_buffer.count, LOGGER_RING_BUFFER_SIZE);
-    printf("Total events since init: %" PRIu32 " (counter only)\n", g_ring_buffer.total_events);
-    printf("Storage: Only last %d events are persisted to flash\n", LOGGER_RING_BUFFER_SIZE);
-    
-    if (g_ring_buffer.count == 0) {
-        printf("No events in history\n");
-    } else {
-        printf("\nEvents stored in memory (oldest to newest):\n");
-        printf("Index | Seq# | Event      | Timestamp (μs)\n");
-        printf("------|------|------------|----------------\n");
-        
-        for (int i = 0; i < g_ring_buffer.count; i++) {
-            int actual_index;
-            if (g_ring_buffer.count < LOGGER_RING_BUFFER_SIZE) {
-                // Buffer not full, events start from index 0
-                actual_index = i;
-            } else {
-                // Buffer is full, start from head position (oldest)
-                actual_index = (g_ring_buffer.head + i) % LOGGER_RING_BUFFER_SIZE;
-            }
-            
-            logger_event_t* event = &g_ring_buffer.events[actual_index];
-            printf("%5d | %4" PRIu32 " | %-10s | %16" PRIu64 "\n", 
-                   i, 
-                   event->sequence_number, 
-                   logger_event_type_to_string(event->type),
-                   event->timestamp);
-        }
-    }
-    
-    xSemaphoreGive(g_ring_buffer_mutex);
-    printf("======================\n\n");
 }
 
 esp_err_t logger_get_event_by_index(uint8_t index, logger_event_t* event)
