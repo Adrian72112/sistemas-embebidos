@@ -110,15 +110,6 @@ esp_err_t audio_controller_play(void)
         return ESP_ERR_TIMEOUT;
     }
     
-    // Resume if paused
-    if (is_paused) {
-        is_paused = false;
-        xSemaphoreGive(player_mutex);
-        logger_log_event(LOGGER_EVENT_PLAY);
-        ESP_LOGI(TAG, "▶️ Resumed: %s", playlist[current_track_index].name);
-        return ESP_OK;
-    }
-    
     // Stop current track if playing
     stop_current_track = true;
     if (audio_task_handle) {
@@ -210,15 +201,56 @@ esp_err_t audio_controller_next(void)
     
     // Stop current track
     stop_current_track = true;
+    bool was_playing = (audio_task_handle != NULL && !is_paused);
     is_paused = false;
+    
+    // Wait for current task to finish if it exists
+    if (audio_task_handle) {
+        xSemaphoreGive(player_mutex);
+        
+        int timeout = 50;
+        while (audio_task_handle && timeout-- > 0) {
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        
+        if (audio_task_handle) {
+            vTaskDelete(audio_task_handle);
+            audio_task_handle = NULL;
+        }
+        
+        if (xSemaphoreTake(player_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+            return ESP_ERR_TIMEOUT;
+        }
+    }
     
     // Move to next track
     current_track_index = (current_track_index + 1) % playlist_size;
     
+    // Si estaba reproduciendo, iniciar la nueva canción automáticamente
+    if (was_playing) {
+        stop_current_track = false;
+        
+        BaseType_t result = xTaskCreate(
+            audio_play_task,
+            "audio_play",
+            4096,
+            &playlist[current_track_index],
+            1,
+            &audio_task_handle
+        );
+        
+        if (result != pdPASS) {
+            xSemaphoreGive(player_mutex);
+            ESP_LOGE(TAG, "Failed to create audio task for next track");
+            return ESP_FAIL;
+        }
+    }
+    
     xSemaphoreGive(player_mutex);
     
     logger_log_event(LOGGER_EVENT_NEXT);
-    ESP_LOGI(TAG, "⏭️ Next: %s", playlist[current_track_index].name);
+    ESP_LOGI(TAG, "⏭️ Next: %s%s", playlist[current_track_index].name, 
+             was_playing ? " (playing)" : " (ready)");
     
     return ESP_OK;
 }
@@ -234,15 +266,56 @@ esp_err_t audio_controller_previous(void)
     
     // Stop current track
     stop_current_track = true;
+    bool was_playing = (audio_task_handle != NULL && !is_paused);
     is_paused = false;
+    
+    // Wait for current task to finish if it exists
+    if (audio_task_handle) {
+        xSemaphoreGive(player_mutex);
+        
+        int timeout = 50;
+        while (audio_task_handle && timeout-- > 0) {
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        
+        if (audio_task_handle) {
+            vTaskDelete(audio_task_handle);
+            audio_task_handle = NULL;
+        }
+        
+        if (xSemaphoreTake(player_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+            return ESP_ERR_TIMEOUT;
+        }
+    }
     
     // Move to previous track
     current_track_index = (current_track_index - 1 + playlist_size) % playlist_size;
     
+    // Si estaba reproduciendo, iniciar la nueva canción automáticamente
+    if (was_playing) {
+        stop_current_track = false;
+        
+        BaseType_t result = xTaskCreate(
+            audio_play_task,
+            "audio_play",
+            4096,
+            &playlist[current_track_index],
+            1,
+            &audio_task_handle
+        );
+        
+        if (result != pdPASS) {
+            xSemaphoreGive(player_mutex);
+            ESP_LOGE(TAG, "Failed to create audio task for previous track");
+            return ESP_FAIL;
+        }
+    }
+    
     xSemaphoreGive(player_mutex);
     
     logger_log_event(LOGGER_EVENT_PREVIOUS);
-    ESP_LOGI(TAG, "⏮️ Previous: %s", playlist[current_track_index].name);
+    ESP_LOGI(TAG, "⏮️ Previous: %s%s", playlist[current_track_index].name,
+             was_playing ? " (playing)" : " (ready)");
     
     return ESP_OK;
 }
@@ -261,30 +334,40 @@ static void audio_play_task(void *args)
         return;
     }
     
-    size_t bytes_written = 0;
-    const uint8_t *data_ptr = track->data;
-    size_t remaining = track->size;
+    ESP_LOGI(TAG, "🎵 Playing: %s (%zu bytes) - LOOP MODE", track->name, track->size);
     
-    ESP_LOGI(TAG, "🎵 Playing: %s (%zu bytes)", track->name, track->size);
-    
-    // Write audio data in chunks
-    while (!stop_current_track && remaining > 0) {
-        size_t chunk_size = (remaining > 1024) ? 1024 : remaining;
+    // Loop infinito hasta que se pare la canción
+    while (!stop_current_track && !is_paused) {
+        size_t bytes_written = 0;
+        const uint8_t *data_ptr = track->data;
+        size_t remaining = track->size;
         
-        esp_err_t ret = i2s_driver_write(tx_handle, data_ptr, chunk_size, &bytes_written);
-        if (ret != ESP_OK || bytes_written == 0) {
-            ESP_LOGE(TAG, "Failed to write audio data");
-            break;
+        // Write audio data in chunks
+        while (!stop_current_track && !is_paused && remaining > 0) {
+            size_t chunk_size = (remaining > 1024) ? 1024 : remaining;
+            
+            esp_err_t ret = i2s_driver_write(tx_handle, data_ptr, chunk_size, &bytes_written);
+            if (ret != ESP_OK || bytes_written == 0) {
+                ESP_LOGE(TAG, "Failed to write audio data");
+                break;
+            }
+            
+            data_ptr += bytes_written;
+            remaining -= bytes_written;
+            
+            // Small delay to prevent overwhelming I2S
+            vTaskDelay(pdMS_TO_TICKS(1));
         }
         
-        data_ptr += bytes_written;
-        remaining -= bytes_written;
-        
-        // Small delay to prevent overwhelming I2S
-        vTaskDelay(pdMS_TO_TICKS(1));
+        // Si terminó la canción completa y no se pidió parar, reiniciar
+        if (remaining == 0 && !stop_current_track && !is_paused) {
+            ESP_LOGD(TAG, "🔄 Looping: %s", track->name);
+            // Pequeña pausa entre loops para evitar clicks
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
     }
     
-    ESP_LOGI(TAG, "🎵 Finished: %s", track->name);
+    ESP_LOGI(TAG, "🎵 Stopped: %s", track->name);
     
     audio_task_handle = NULL;
     vTaskDelete(NULL);
