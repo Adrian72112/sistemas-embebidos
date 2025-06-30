@@ -10,6 +10,7 @@
 #include "wifi_connection.h"
 #include "logger.h"
 #include <string.h>
+#include "ntp_sync.h"
 
 #define BROKER_URI "mqtt://broker.hivemq.com"
 #define MQTT_EVENTS_TOPIC "/esp32/audio/events"
