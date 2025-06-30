@@ -172,7 +172,7 @@ esp_err_t root_get_handler(httpd_req_t *req)
     httpd_resp_send(req, html, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
-
+//paginawebrefcibecomandos
 // Maneja GET a "/comando"
 esp_err_t comando_handler(httpd_req_t *req)
 {
