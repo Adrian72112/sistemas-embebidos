@@ -1,0 +1,17 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.espIdfPathWin": "c:\\Users\\Agustina\\esp\\v5.4.1\\esp-idf",
+  "idf.pythonInstallPath": "c:\\Users\\Agustina\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+  "idf.openOcdConfigs": [
+    "board/esp32s2-kaluga-1.cfg"
+  ],
+  "idf.toolsPathWin": "c:\\Users\\Agustina\\.espressif",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s2"
+  },
+  "files.associations": {
+    "esp_system.h": "c"
+  },
+  "idf.flashType": "UART",
+  "idf.portWin": "COM4"
+}
