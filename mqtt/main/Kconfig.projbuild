@@ -1,0 +1,2 @@
+# Este archivo se mantiene vacío ya que las configuraciones MQTT
+# se han movido al componente mqtt_lib

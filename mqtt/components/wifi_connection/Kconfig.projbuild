@@ -1,0 +1,110 @@
+menu "WiFi Connection Configuration"
+
+    config WIFI_SSID
+        string "WiFi SSID"
+        default "YourWiFiSSID"
+        help
+            SSID (network name) for the device to connect to.
+
+    config WIFI_PASSWORD
+        string "WiFi Password"
+        default "YourWiFiPassword"
+        help
+            WiFi password (WPA or WPA2) for the device to use.
+            Can be left blank if the network has no security set.
+
+    config WIFI_CONN_MAX_RETRY
+        int "Maximum retry"
+        default 6
+        help
+            Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+
+    choice WIFI_SCAN_METHOD
+        prompt "WiFi Scan Method"
+        default WIFI_SCAN_METHOD_ALL_CHANNEL
+        help
+            WiFi scan method:
+            - Fast scan: scan will end after find SSID match AP
+            - All channel scan: scan will end after scan all the channel
+
+        config WIFI_SCAN_METHOD_FAST
+            bool "Fast scan"
+        config WIFI_SCAN_METHOD_ALL_CHANNEL
+            bool "All channel scan"
+    endchoice
+
+    config WIFI_SCAN_RSSI_THRESHOLD
+        int "WiFi Scan RSSI Threshold"
+        range -127 0
+        default -127
+        help
+            The minimum rssi to accept in the scan mode
+
+    choice WIFI_AUTH_MODE
+        prompt "WiFi Authentication Mode"
+        default WIFI_AUTH_OPEN
+        help
+            WiFi authentication mode
+
+        config WIFI_AUTH_OPEN
+            bool "Open"
+        config WIFI_AUTH_WEP
+            bool "WEP"
+        config WIFI_AUTH_WPA_PSK
+            bool "WPA PSK"
+        config WIFI_AUTH_WPA2_PSK
+            bool "WPA2 PSK"
+        config WIFI_AUTH_WPA_WPA2_PSK
+            bool "WPA/WPA2 PSK"
+        config WIFI_AUTH_WPA2_ENTERPRISE
+            bool "WPA2 Enterprise"
+        config WIFI_AUTH_WPA3_PSK
+            bool "WPA3 PSK"
+        config WIFI_AUTH_WPA2_WPA3_PSK
+            bool "WPA2/WPA3 PSK"
+        config WIFI_AUTH_WAPI_PSK
+            bool "WAPI PSK"
+    endchoice
+
+    choice WIFI_CONNECT_AP_SORT_METHOD
+        prompt "WiFi Connect AP Sort Method"
+        default WIFI_CONNECT_AP_BY_SIGNAL
+        help
+            WiFi connect AP sort method
+
+        config WIFI_CONNECT_AP_BY_SIGNAL
+            bool "By Signal"
+        config WIFI_CONNECT_AP_BY_SECURITY
+            bool "By Security"
+    endchoice
+
+    config CONNECT_IPV4
+        bool "Connect using IPv4"
+        default y
+        help
+            Connect using IPv4
+
+    config CONNECT_IPV6
+        bool "Connect using IPv6"
+        default y
+        help
+            Connect using IPv6
+
+    choice CONNECT_IPV6_PREF
+        prompt "IPv6 Address Preference"
+        depends on CONNECT_IPV6
+        default CONNECT_IPV6_PREF_LOCAL_LINK
+        help
+            Select which IPv6 address the device will report to use
+
+        config CONNECT_IPV6_PREF_LOCAL_LINK
+            bool "Local Link"
+        config CONNECT_IPV6_PREF_GLOBAL
+            bool "Global"
+        config CONNECT_IPV6_PREF_SITE_LOCAL
+            bool "Site Local"
+        config CONNECT_IPV6_PREF_UNIQUE_LOCAL
+            bool "Unique Local"
+    endchoice
+
+endmenu
