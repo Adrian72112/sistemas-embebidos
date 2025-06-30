@@ -11,10 +11,18 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-#include "esp_http_server.h"  
+#include "esp_http_server.h"
 
-#define EXAMPLE_ESP_WIFI_SSID    "Yoso  ytuwifi"
-#define EXAMPLE_ESP_WIFI_PASS    "4dejulio"
+// Archivos web embebidos
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
+extern const uint8_t style_css_start[] asm("_binary_style_css_start");
+extern const uint8_t style_css_end[]   asm("_binary_style_css_end");
+extern const uint8_t response_html_start[] asm("_binary_response_html_start");
+extern const uint8_t response_html_end[]   asm("_binary_response_html_end");  
+
+#define EXAMPLE_ESP_WIFI_SSID    "SeTeLINK"
+#define EXAMPLE_ESP_WIFI_PASS    "mvn5ts4k."
 #define EXAMPLE_ESP_MAXIMUM_RETRY  CONFIG_ESP_MAXIMUM_RETRY
 
 // Provide a default value for EXAMPLE_H2E_IDENTIFIER
@@ -156,20 +164,23 @@ void wifi_init_apsta(void)
     }
 }
 
-
-
-
 // Maneja GET a "/"
 esp_err_t root_get_handler(httpd_req_t *req)
 {
-    const char* html = "<!DOCTYPE html><html><head><title>Comando MQTT</title></head>"
-                       "<body><h2>Enviar Comando</h2>"
-                       "<form action=\"/comando\" method=\"get\">"
-                       "<input type=\"text\" name=\"cmd\" placeholder=\"Escribe un comando\">"
-                       "<input type=\"submit\" value=\"Enviar\">"
-                       "</form></body></html>";
+    const size_t index_html_len = index_html_end - index_html_start;
+    
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_send(req, (const char*)index_html_start, index_html_len);
+    return ESP_OK;
+}
 
-    httpd_resp_send(req, html, HTTPD_RESP_USE_STRLEN);
+// Maneja GET a "/style.css"
+esp_err_t style_get_handler(httpd_req_t *req)
+{
+    const size_t style_css_len = style_css_end - style_css_start;
+    
+    httpd_resp_set_type(req, "text/css");
+    httpd_resp_send(req, (const char*)style_css_start, style_css_len);
     return ESP_OK;
 }
 
@@ -177,38 +188,98 @@ esp_err_t root_get_handler(httpd_req_t *req)
 esp_err_t comando_handler(httpd_req_t *req)
 {
     char query[100];
+    char cmd[64] = "Sin comando";
+    
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK) {
-        char cmd[64];
         if (httpd_query_key_value(query, "cmd", cmd, sizeof(cmd)) == ESP_OK) {
             ESP_LOGI("WEB", "Comando recibido: %s", cmd);
             // Aquí en el futuro: publicar por MQTT
         }
     }
-    httpd_resp_send(req, "Comando recibido", HTTPD_RESP_USE_STRLEN);
+    
+    // Usar el archivo embebido de respuesta
+    const size_t response_html_len = response_html_end - response_html_start;
+    
+    // Crear buffer para la respuesta con el comando insertado
+    char* formatted_response = malloc(response_html_len + strlen(cmd) + 100);
+    if (formatted_response != NULL) {
+        // Copiar el contenido del archivo embebido a un string temporal
+        char* temp_response = malloc(response_html_len + 1);
+        if (temp_response != NULL) {
+            memcpy(temp_response, response_html_start, response_html_len);
+            temp_response[response_html_len] = '\0';
+            
+            // Buscar y reemplazar %s con el comando
+            char* placeholder = strstr(temp_response, "%s");
+            if (placeholder != NULL) {
+                size_t before_len = placeholder - temp_response;
+                strncpy(formatted_response, temp_response, before_len);
+                formatted_response[before_len] = '\0';
+                strcat(formatted_response, cmd);
+                strcat(formatted_response, placeholder + 2); // +2 para saltar "%s"
+            } else {
+                strcpy(formatted_response, temp_response);
+            }
+            
+            httpd_resp_set_type(req, "text/html");
+            httpd_resp_send(req, formatted_response, HTTPD_RESP_USE_STRLEN);
+            
+            free(temp_response);
+        } else {
+            // Si no se puede asignar memoria, enviar respuesta simple
+            httpd_resp_send(req, (const char*)response_html_start, response_html_len);
+        }
+        free(formatted_response);
+    } else {
+        // Fallback a respuesta simple si no se puede asignar memoria
+        char simple_response[200];
+        snprintf(simple_response, sizeof(simple_response), 
+                "<!DOCTYPE html><html><body><h2>Comando Recibido</h2>"
+                "<p>Comando: %s</p><a href='/'>Volver</a></body></html>", cmd);
+        httpd_resp_send(req, simple_response, HTTPD_RESP_USE_STRLEN);
+    }
     return ESP_OK;
 }
+
+// No necesitamos funciones de inicialización del sistema de archivos ya que usamos archivos embebidos
 
 void start_webserver(void)
 {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     httpd_handle_t server = NULL;
 
-    if (httpd_start(&server, &config) == ESP_OK) {
-        httpd_uri_t root_uri = {
-            .uri      = "/",
-            .method   = HTTP_GET,
-            .handler  = root_get_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &root_uri);
+    // Aumentamos el stack size para manejar las páginas embebidas
+    config.stack_size = 8192;
 
-        httpd_uri_t cmd_uri = {
-            .uri      = "/comando",
-            .method   = HTTP_GET,
-            .handler  = comando_handler,
-            .user_ctx = NULL
+    if (httpd_start(&server, &config) == ESP_OK) {
+        // Registramos todos los endpoints usando archivos embebidos
+        const httpd_uri_t endpoints[] = {
+            {
+                .uri      = "/",
+                .method   = HTTP_GET,
+                .handler  = root_get_handler,
+                .user_ctx = NULL
+            },
+            {
+                .uri      = "/style.css",
+                .method   = HTTP_GET,
+                .handler  = style_get_handler,
+                .user_ctx = NULL
+            },
+            {
+                .uri      = "/comando",
+                .method   = HTTP_GET,
+                .handler  = comando_handler,
+                .user_ctx = NULL
+            }
         };
-        httpd_register_uri_handler(server, &cmd_uri);
+
+        // Registrar todos los endpoints
+        for (size_t i = 0; i < sizeof(endpoints) / sizeof(endpoints[0]); i++) {
+            if (httpd_register_uri_handler(server, &endpoints[i]) != ESP_OK) {
+                ESP_LOGE("WEB", "Error registrando endpoint %s", endpoints[i].uri);
+            }
+        }
 
         ESP_LOGI("WEB", "Servidor HTTP iniciado");
     } else {
@@ -216,16 +287,17 @@ void start_webserver(void)
     }
 }
 
-
-
 void app_main(void)
 {
     esp_err_t ret = nvs_flash_init();
+    
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    // No necesitamos inicializar sistema de archivos, los archivos están embebidos en el binario
 
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     wifi_init_apsta();

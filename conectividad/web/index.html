@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comando MQTT</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Control ESP32</h1>
+            <p>Sistema de envío de comandos MQTT</p>
+        </header>
+        
+        <main>
+            <div class="form-container">
+                <h2>Enviar Comando</h2>
+                <form action="/comando" method="get">
+                    <div class="input-group">
+                        <label for="cmd">Comando:</label>
+                        <input type="text" id="cmd" name="cmd" placeholder="Escribe un comando" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Enviar</button>
+                </form>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 ESP32 Control System</p>
+        </footer>
+    </div>
+</body>
+</html>
