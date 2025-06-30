@@ -569,3 +569,102 @@ static esp_err_t logger_request_save_async(void)
     
     return ESP_OK;
 }
+
+esp_err_t logger_get_all_events_chronological(logger_event_t **events, uint8_t *count)
+{
+    if (!g_logger_initialized) {
+        ESP_LOGE(TAG, "Logger not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    if (events == NULL || count == NULL) {
+        ESP_LOGE(TAG, "Invalid parameters: events and count cannot be NULL");
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    if (xSemaphoreTake(g_ring_buffer_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        ESP_LOGE(TAG, "Failed to take mutex");
+        return ESP_ERR_TIMEOUT;
+    }
+    
+    *count = g_ring_buffer.count;
+    
+    if (*count == 0) {
+        *events = NULL;
+        xSemaphoreGive(g_ring_buffer_mutex);
+        return ESP_OK;
+    }
+    
+    // Asignar memoria para el array de eventos
+    *events = malloc(sizeof(logger_event_t) * (*count));
+    if (*events == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory for events array");
+        xSemaphoreGive(g_ring_buffer_mutex);
+        return ESP_ERR_NO_MEM;
+    }
+    
+    // Copiar eventos ordenados por número de secuencia (cronológicamente)
+    // El buffer circular puede tener eventos en desorden, necesitamos ordenarlos
+    logger_event_t temp_events[LOGGER_RING_BUFFER_SIZE];
+    uint8_t temp_count = 0;
+    
+    // Primero copiamos todos los eventos válidos
+    for (int i = 0; i < LOGGER_RING_BUFFER_SIZE && temp_count < g_ring_buffer.count; i++) {
+        uint8_t index = (g_ring_buffer.head - g_ring_buffer.count + i + LOGGER_RING_BUFFER_SIZE) % LOGGER_RING_BUFFER_SIZE;
+        temp_events[temp_count] = g_ring_buffer.events[index];
+        temp_count++;
+    }
+    
+    // Ordenar por número de secuencia (burbuja simple, dado que son pocos eventos)
+    for (int i = 0; i < temp_count - 1; i++) {
+        for (int j = 0; j < temp_count - i - 1; j++) {
+            if (temp_events[j].sequence_number > temp_events[j + 1].sequence_number) {
+                logger_event_t temp = temp_events[j];
+                temp_events[j] = temp_events[j + 1];
+                temp_events[j + 1] = temp;
+            }
+        }
+    }
+    
+    // Copiar eventos ordenados al array de salida
+    memcpy(*events, temp_events, sizeof(logger_event_t) * temp_count);
+    
+    xSemaphoreGive(g_ring_buffer_mutex);
+    
+    ESP_LOGI(TAG, "Retrieved %d events in chronological order", *count);
+    return ESP_OK;
+}
+
+esp_err_t logger_event_to_json(const logger_event_t *event, char *json_buffer, size_t buffer_size)
+{
+    if (event == NULL || json_buffer == NULL || buffer_size < 256) {
+        ESP_LOGE(TAG, "Invalid parameters for JSON conversion");
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // Convertir timestamp a segundos y microsegundos para mejor legibilidad
+    uint64_t seconds = event->timestamp / 1000000;
+    uint64_t microseconds = event->timestamp % 1000000;
+    
+    int written = snprintf(json_buffer, buffer_size,
+        "{"
+        "\"type\":\"%s\","
+        "\"sequence\":%lu,"
+        "\"timestamp_us\":%llu,"
+        "\"timestamp_s\":%llu,"
+        "\"timestamp_us_frac\":%llu"
+        "}",
+        logger_event_type_to_string(event->type),
+        (unsigned long)event->sequence_number,
+        (unsigned long long)event->timestamp,
+        (unsigned long long)seconds,
+        (unsigned long long)microseconds
+    );
+    
+    if (written >= buffer_size) {
+        ESP_LOGE(TAG, "JSON buffer too small, needed %d bytes", written);
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    return ESP_OK;
+}

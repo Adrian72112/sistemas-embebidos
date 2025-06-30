@@ -154,4 +154,28 @@ esp_err_t logger_save_to_file(void);
  */
 esp_err_t logger_load_from_file(void);
 
+/**
+ * @brief Obtener todos los eventos en orden cronológico (más antiguos primero)
+ * 
+ * Recupera todos los eventos del buffer circular ordenados por su número de secuencia.
+ * Los eventos se devuelven en un array que debe ser liberado por el llamador.
+ * 
+ * @param events Puntero donde se almacenará el array de eventos (será asignado por malloc)
+ * @param count Puntero donde se almacenará el número de eventos recuperados
+ * @return ESP_OK en éxito, ESP_ERR_NO_MEM si no hay memoria, ESP_ERR_INVALID_ARG si los parámetros son NULL
+ */
+esp_err_t logger_get_all_events_chronological(logger_event_t **events, uint8_t *count);
+
+/**
+ * @brief Convertir un evento a formato JSON para transmisión MQTT
+ * 
+ * Convierte un evento del logger a formato JSON con todos sus campos.
+ * 
+ * @param event Puntero al evento a convertir
+ * @param json_buffer Buffer donde se escribirá el JSON (debe tener al menos 256 bytes)
+ * @param buffer_size Tamaño del buffer JSON
+ * @return ESP_OK en éxito, ESP_ERR_INVALID_ARG si los parámetros son NULL o buffer muy pequeño
+ */
+esp_err_t logger_event_to_json(const logger_event_t *event, char *json_buffer, size_t buffer_size);
+
 #endif // LOGGER_H
