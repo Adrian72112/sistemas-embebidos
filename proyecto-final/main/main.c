@@ -204,7 +204,12 @@ void my_callback(const char *topic, const char *data, int len)
     if (strcmp(command, "play") == 0) {
         ESP_LOGI(TAG, "▶️ Comando: PLAY - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
-        led_set_color(strip, 0, 0, 255); // azul
+        while(1) {
+            led_set_color(strip, 0, 0, 255); // azul
+            vTaskDelay(100);
+            led_off(strip);
+            vTaskDelay(100);
+        }
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PLAY: %s", esp_err_to_name(ret));
         }
@@ -220,6 +225,7 @@ void my_callback(const char *topic, const char *data, int len)
     else if (strcmp(command, "next") == 0) {
         ESP_LOGI(TAG, "⏭️ Comando: NEXT - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_NEXT);
+        led_set_color(strip, 0, 0, 255); // azul
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento NEXT: %s", esp_err_to_name(ret));
         }
@@ -227,6 +233,7 @@ void my_callback(const char *topic, const char *data, int len)
     else if (strcmp(command, "previous") == 0) {
         ESP_LOGI(TAG, "⏮️ Comando: PREVIOUS - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PREVIOUS);
+        led_set_color(strip, 0, 0, 255); // azul
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PREVIOUS: %s", esp_err_to_name(ret));
         }
@@ -241,7 +248,6 @@ void app_main(void)
 {
     printf("ESP32-S2 Kaluga Kit - Audio Player con Control MQTT\n");
     printf("=====================================================\n");
-    led_strip_t *strip = NULL;
     ESP_ERROR_CHECK( led_init(&strip) );
     // Inicializar NVS, networking y WiFi
     ESP_LOGI(TAG, "🔧 Inicializando sistema...");
