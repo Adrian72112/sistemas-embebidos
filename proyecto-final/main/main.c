@@ -25,6 +25,9 @@ static TaskHandle_t sync_task_handle = NULL;
 #define PENDING_MESSAGES_QUEUE_SIZE 20
 static QueueHandle_t pending_messages_queue = NULL;
 
+
+
+
 typedef struct {
     int msg_id;
     uint32_t sequence_number;

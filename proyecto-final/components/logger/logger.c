@@ -158,6 +158,11 @@ esp_err_t logger_deinit(void)
 
 esp_err_t logger_log_event(logger_event_type_t event_type)
 {
+    time_t now;
+    time(&now);
+    evento.timestamp = now;
+    ESP_LOGI(TAG, "Timestamp del evento: %ld", now);
+
     if (!g_logger_initialized) {
         ESP_LOGE(TAG, "Logger not initialized");
         return ESP_ERR_INVALID_STATE;

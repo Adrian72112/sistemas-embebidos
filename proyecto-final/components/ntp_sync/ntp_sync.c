@@ -29,6 +29,8 @@ void ntp_wait_for_sync(void) {
     }
 
     if (timeinfo.tm_year >= (2016 - 1900)) {
+        setenv("TZ", "UTC-3", 1);  // Configura la zona horaria de Uruguay
+        tzset();                   // Aplica la zona horaria al sistema
         ESP_LOGI(TAG, "Hora sincronizada: %s", asctime(&timeinfo));
     } else {
         ESP_LOGW(TAG, "No se logró sincronizar la hora vía NTP");
