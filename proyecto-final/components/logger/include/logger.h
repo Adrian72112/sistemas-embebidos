@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "esp_err.h"
+#include <time.h>
+
 
 /* Constantes de Configuración */
 #define LOGGER_RING_BUFFER_SIZE 20                          ///< Número máximo de eventos en el buffer circular
@@ -45,7 +47,7 @@ typedef enum {
  */
 typedef struct {
     logger_event_type_t type;   ///< Tipo de evento
-    uint64_t timestamp;         ///< Timestamp en microsegundos desde el arranque
+    time_t timestamp;  // guarda la hora de un evento
     uint32_t sequence_number;   ///< Número de secuencia global
 } logger_event_t;
 

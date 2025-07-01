@@ -13,6 +13,7 @@
 #include <string.h>
 #include "led_strip.h"
 #include "led.h"
+#include "ntp_sync.h"
 
 #define BROKER_URI "mqtt://broker.hivemq.com"
 #define MQTT_EVENTS_TOPIC "/esp32/audio/events"
@@ -26,6 +27,9 @@ led_strip_t *strip = NULL;
 // Queue para manejar acknowledgments de mensajes publicados
 #define PENDING_MESSAGES_QUEUE_SIZE 20
 static QueueHandle_t pending_messages_queue = NULL;
+
+
+
 
 typedef struct {
     int msg_id;
@@ -317,6 +321,7 @@ void app_main(void)
         ESP_LOGI(TAG, "  - %s", tracks[i].name);
     }
     
+    ntp_initialize();
     // Mantener el programa funcionando
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));  // Delay de 1 segundo
