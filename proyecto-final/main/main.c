@@ -241,7 +241,6 @@ void app_main(void)
 {
     printf("ESP32-S2 Kaluga Kit - Audio Player con Control MQTT\n");
     printf("=====================================================\n");
-    led_strip_t *strip = NULL;
     ESP_ERROR_CHECK( led_init(&strip) );
     // Inicializar NVS, networking y WiFi
     ESP_LOGI(TAG, "🔧 Inicializando sistema...");
