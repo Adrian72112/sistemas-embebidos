@@ -160,8 +160,6 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
 {
     time_t now;
     time(&now);
-    evento.timestamp = now;
-    ESP_LOGI(TAG, "Timestamp del evento: %ld", now);
 
     if (!g_logger_initialized) {
         ESP_LOGE(TAG, "Logger not initialized");
@@ -173,7 +171,8 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
         return ESP_ERR_INVALID_ARG;
     }
 
-    // Add event to ring buffer
+    ESP_LOGI(TAG, "Timestamp del evento: %ld", now);
+
     esp_err_t err = logger_ring_buffer_add_event(event_type);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add event to ring buffer: %s", esp_err_to_name(err));
@@ -186,8 +185,7 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
              LOGGER_RING_BUFFER_SIZE,
              g_ring_buffer.total_events);
 
-    // Request async save to SPIFFS (non-blocking)
-    logger_request_save_async();
+    logger_request_save_async();  // petición asincrónica de guardado
 
     return ESP_OK;
 }
