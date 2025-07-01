@@ -11,6 +11,8 @@
 #include "logger.h"
 #include "web_server.h"
 #include <string.h>
+#include "led_strip.h"
+#include "led.h"
 
 #define BROKER_URI "mqtt://broker.hivemq.com"
 #define MQTT_EVENTS_TOPIC "/esp32/audio/events"
@@ -20,7 +22,7 @@ static const char *TAG = "main";
 // Variables para control de sincronización de eventos
 static bool mqtt_connection_established = false;
 static TaskHandle_t sync_task_handle = NULL;
-
+led_strip_t *strip = NULL;
 // Queue para manejar acknowledgments de mensajes publicados
 #define PENDING_MESSAGES_QUEUE_SIZE 20
 static QueueHandle_t pending_messages_queue = NULL;
@@ -202,6 +204,7 @@ void my_callback(const char *topic, const char *data, int len)
     if (strcmp(command, "play") == 0) {
         ESP_LOGI(TAG, "▶️ Comando: PLAY - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
+        led_set_color(strip, 0, 0, 255); // azul
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PLAY: %s", esp_err_to_name(ret));
         }
@@ -209,6 +212,7 @@ void my_callback(const char *topic, const char *data, int len)
     else if (strcmp(command, "pause") == 0) {
         ESP_LOGI(TAG, "⏸️ Comando: PAUSE - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
+        led_off(strip);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PAUSE: %s", esp_err_to_name(ret));
         }
@@ -237,7 +241,8 @@ void app_main(void)
 {
     printf("ESP32-S2 Kaluga Kit - Audio Player con Control MQTT\n");
     printf("=====================================================\n");
-    
+    led_strip_t *strip = NULL;
+    ESP_ERROR_CHECK( led_init(&strip) );
     // Inicializar NVS, networking y WiFi
     ESP_LOGI(TAG, "🔧 Inicializando sistema...");
     ESP_ERROR_CHECK(nvs_flash_init());
