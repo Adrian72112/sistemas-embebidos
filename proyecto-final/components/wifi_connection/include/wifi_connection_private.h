@@ -4,6 +4,7 @@
 
 #include "esp_err.h"
 #include "esp_wifi.h"
+#include "esp_netif.h"
 #include "sdkconfig.h"
 
 #define MAX_IP6_ADDRS_PER_NETIF (5)
@@ -11,12 +12,10 @@
 
 extern const char *ipv6_addr_types_to_str[6];
 
-void wifi_start(void);
-void wifi_stop(void);
-esp_err_t wifi_sta_do_connect(wifi_config_t wifi_config, bool wait);
-esp_err_t wifi_sta_do_disconnect(void);
+// Función principal de inicialización WiFi AP+STA
+esp_err_t wifi_connect_apsta(void);
+
+// Funciones de utilidad
 bool is_our_netif(const char *prefix, esp_netif_t *netif);
-void print_all_netif_ips(const char *prefix);
-void wifi_shutdown(void);
-esp_err_t wifi_connect_to_ap(void);
+esp_netif_t *get_wifi_netif_from_desc(const char *desc);
 

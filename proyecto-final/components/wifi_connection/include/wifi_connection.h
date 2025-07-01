@@ -13,30 +13,27 @@
 #include "esp_wifi.h"
 
 #define WIFI_NETIF_DESC_STA "wifi_netif_sta"
+#define WIFI_NETIF_DESC_AP "wifi_netif_ap"
 #define WIFI_NETIF_DESC_ETH "wifi_netif_eth"
 
 #define WIFI_SCAN_METHOD WIFI_ALL_CHANNEL_SCAN
-
 #define WIFI_CONNECT_AP_SORT_METHOD WIFI_CONNECT_AP_BY_SECURITY
-
 #define WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_OPEN
 
 #define WIFI_INTERFACE get_wifi_netif_from_desc(WIFI_NETIF_DESC_STA)
 #define get_wifi_netif() get_wifi_netif_from_desc(WIFI_NETIF_DESC_STA)
 
 /**
- * @brief Configure Wi-Fi, connect, wait for IP
+ * @brief Configura WiFi en modo AP+STA y establece conexión
  *
- * This function configures and connects to WiFi network
+ * Esta función:
+ * - Configura el ESP32 como Access Point (ConfiguradorESP)
+ * - Se conecta a la red WiFi configurada (SeTeLINK)
+ * - Inicia el servidor web automáticamente
  *
- * @return ESP_OK on successful connection
+ * @return ESP_OK si la configuración es exitosa
  */
 esp_err_t wifi_connect(void);
-
-/**
- * @brief Disconnect from WiFi and deinitialize
- */
-esp_err_t wifi_disconnect(void);
 
 /**
  * @brief Get the WiFi netif handle by description

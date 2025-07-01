@@ -9,6 +9,7 @@
 #include "esp_netif.h"
 #include "wifi_connection.h"
 #include "logger.h"
+#include "web_server.h"
 #include <string.h>
 
 #define BROKER_URI "mqtt://broker.hivemq.com"
@@ -254,12 +255,20 @@ void app_main(void)
     ESP_ERROR_CHECK(mqtt_lib_set_connected_callback(mqtt_connected_callback));
     ESP_ERROR_CHECK(mqtt_lib_set_published_callback(mqtt_published_callback));
     
+    // Inicializar servidor web
+    ESP_LOGI(TAG, "🌐 Iniciando servidor web...");
+    esp_err_t ret = web_server_start();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Error iniciando servidor web: %s", esp_err_to_name(ret));
+        // Continuar sin servidor web si falla
+    }
+    
     // Initialize audio controller
     ESP_LOGI(TAG, "🎵 Inicializando audio controller...");
     audio_controller_config_t config = AUDIO_CONTROLLER_DEFAULT_CONFIG();
     config.volume = 55;
     
-    esp_err_t ret = audio_controller_init(&config);
+    ret = audio_controller_init(&config);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Error inicializando audio: %s", esp_err_to_name(ret));
         return;
@@ -296,6 +305,9 @@ void app_main(void)
     
     ESP_LOGI(TAG, "✅ Sistema listo! Esperando comandos MQTT...");
     ESP_LOGI(TAG, "📋 Comandos disponibles: play, pause, next, previous");
+    ESP_LOGI(TAG, "🌐 Control web disponible en:");
+    ESP_LOGI(TAG, "   - AP: http://192.168.4.1/ (red 'ConfiguradorESP')");
+    ESP_LOGI(TAG, "   - Si conectado a STA: http://[IP_LOCAL]/");
     ESP_LOGI(TAG, "🎼 Playlist cargada con %d pistas:", 6);
     for (int i = 0; i < 6; i++) {
         ESP_LOGI(TAG, "  - %s", tracks[i].name);

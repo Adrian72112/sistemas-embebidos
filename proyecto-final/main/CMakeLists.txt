@@ -1,6 +1,6 @@
 idf_component_register(SRCS "main.c"
                     INCLUDE_DIRS "."
-                    REQUIRES audio_controller mqtt_lib nvs_flash esp_netif wifi_connection
+                    REQUIRES audio_controller mqtt_lib nvs_flash esp_netif wifi_connection web_server
                     EMBED_FILES "../audios/victory8bit.pcm"
                                 "../audios/8bit.pcm"
                                 "../audios/start.pcm"

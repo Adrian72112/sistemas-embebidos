@@ -1,6 +1,6 @@
-# ESP-IDF Partition Table
+# ESP-IDF Partition Table para Flash 2MB
 # Name, Type, SubType, Offset, Size, Flags
 nvs,      data, nvs,     0x9000,  0x6000,
 phy_init, data, phy,     0xf000,  0x1000,
 factory,  app,  factory, 0x10000, 0x180000,
-spiffs,   data, spiffs,  ,        0x70000,
+spiffs,   data, spiffs,  ,        0x50000,
