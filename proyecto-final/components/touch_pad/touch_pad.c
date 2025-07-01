@@ -3,7 +3,7 @@
 #include <inttypes.h>
 #include "esp_log.h"
 #include "driver/touch_pad.h"
-#include "delay.h"
+#include "freertos/FreeRTOS.h"
 #include "led.h"
 #include "esp_timer.h"
 
@@ -46,7 +46,7 @@ void tp_read(void)
     uint32_t touch_value;
     uint64_t now;
 
-    delay_ms(100);
+    vTaskDelay(100);
     printf("Touch Sensor read:\n");
 
     while (1) {
@@ -86,13 +86,13 @@ void tp_read(void)
                         ESP_LOGI(TAG, "PLAY/PAUSE: parpadeo");
                         for (int j = 0; j < 2; j++) {
                             led_off(s_strip);
-                            delay_ms(200);
+                            vTaskDelay(200);
                             led_set_color(s_strip,
                                 (s_color_r * s_brightness) / 255,
                                 (s_color_g * s_brightness) / 255,
                                 (s_color_b * s_brightness) / 255
                             );
-                            delay_ms(200);
+                            vTaskDelay(200);
                         }
                         break;
 
@@ -125,7 +125,7 @@ void tp_read(void)
                 }
             }
         }
-        delay_ms(100);
+        vTaskDelay(100);
     }
 }
 
