@@ -173,8 +173,8 @@ esp_err_t wifi_connect_apsta(void)
     // Configuración de Station (conexión a red existente)
     wifi_config_t wifi_sta_config = {
         .sta = {
-            .ssid = "caliope",
-            .password = "sinlugar",
+            .ssid = "SeTeLINK",
+            .password = "mvn5ts4k.",
             .scan_method = WIFI_SCAN_METHOD,
             .sort_method = WIFI_CONNECT_AP_SORT_METHOD,
             .threshold.rssi = -127,

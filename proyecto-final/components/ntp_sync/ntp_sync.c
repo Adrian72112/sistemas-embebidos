@@ -37,7 +37,9 @@ void ntp_wait_for_sync(void) {
     }
 
     if (timeinfo.tm_year >= (2016 - 1900)) {
-        setenv("TZ", "UTC-3", 1);  // Configura la zona horaria de Uruguay
+        // Configurar zona horaria de Uruguay (UTC-3)
+        // En el formato TZ, el signo es invertido: UTC-3 se escribe como "UYT3"
+        setenv("TZ", "UYT3", 1);  // Uruguay Time (UTC-3)
         tzset();                   // Aplica la zona horaria al sistema
         
         // Actualizar tiempo después de configurar zona horaria
@@ -45,9 +47,22 @@ void ntp_wait_for_sync(void) {
         localtime_r(&now, &timeinfo);
         
         ESP_LOGI(TAG, "✅ Hora sincronizada exitosamente!");
-        ESP_LOGI(TAG, "📅 Fecha y hora actual: %s", asctime(&timeinfo));
+        
+        // Mostrar hora UTC
+        struct tm utc_time;
+        gmtime_r(&now, &utc_time);
+        ESP_LOGI(TAG, "🌍 Hora UTC: %04d-%02d-%02d %02d:%02d:%02d", 
+                 utc_time.tm_year + 1900, utc_time.tm_mon + 1, utc_time.tm_mday,
+                 utc_time.tm_hour, utc_time.tm_min, utc_time.tm_sec);
+        
+        // Mostrar hora local (Uruguay)
+        ESP_LOGI(TAG, "🏠 Hora local Uruguay: %04d-%02d-%02d %02d:%02d:%02d", 
+                 timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        
         ESP_LOGI(TAG, "🕐 Timestamp Unix: %lld", (long long)now);
-        ESP_LOGI(TAG, "🌍 Zona horaria: UTC-3 (Uruguay)");
+        ESP_LOGI(TAG, "🌍 Zona horaria: Uruguay (UTC-3)");
+        ESP_LOGI(TAG, "🔍 Verificacion: UTC timestamp vs local time diferencia esperada: 3 horas");
     } else {
         ESP_LOGW(TAG, "⚠️ No se logro sincronizar la hora via NTP");
         ESP_LOGW(TAG, "⚠️ Los timestamps del logger usaran el tiempo del sistema");
