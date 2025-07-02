@@ -199,6 +199,11 @@ void my_callback(const char *topic, const char *data, int len)
 {
     ESP_LOGI(TAG, "📨 Mensaje MQTT recibido -> Topic: %s, Data: %s", topic, data);
     
+    // Mostrar timestamp actual para debug
+    time_t now;
+    time(&now);
+    ESP_LOGI(TAG, "🕐 Timestamp actual al recibir comando: %lld", (long long)now);
+    
     // Crear una copia de los datos para poder trabajar con ellos como string
     char command[len + 1];
     strncpy(command, data, len);
@@ -211,6 +216,8 @@ void my_callback(const char *topic, const char *data, int len)
         led_set_color(strip, 0, 0, 255); // azul
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PLAY: %s", esp_err_to_name(ret));
+        } else {
+            ESP_LOGI(TAG, "✅ Evento PLAY enviado correctamente");
         }
     }
     else if (strcmp(command, "pause") == 0) {
@@ -219,6 +226,8 @@ void my_callback(const char *topic, const char *data, int len)
         led_off(strip);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PAUSE: %s", esp_err_to_name(ret));
+        } else {
+            ESP_LOGI(TAG, "✅ Evento PAUSE enviado correctamente");
         }
     }
     else if (strcmp(command, "next") == 0) {
@@ -226,6 +235,8 @@ void my_callback(const char *topic, const char *data, int len)
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_NEXT);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento NEXT: %s", esp_err_to_name(ret));
+        } else {
+            ESP_LOGI(TAG, "✅ Evento NEXT enviado correctamente");
         }
     }
     else if (strcmp(command, "previous") == 0) {
@@ -233,11 +244,13 @@ void my_callback(const char *topic, const char *data, int len)
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PREVIOUS);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PREVIOUS: %s", esp_err_to_name(ret));
+        } else {
+            ESP_LOGI(TAG, "✅ Evento PREVIOUS enviado correctamente");
         }
     }
     else {
         ESP_LOGW(TAG, "⚠️ Comando desconocido: %s", command);
-        ESP_LOGI(TAG, "Comandos válidos: play, pause, next, previous");
+        ESP_LOGI(TAG, "📋 Comandos válidos: play, pause, next, previous");
     }
 }
 
@@ -321,7 +334,18 @@ void app_main(void)
         ESP_LOGI(TAG, "  - %s", tracks[i].name);
     }
     
+    // Inicializar y sincronizar NTP ANTES de inicializar el logger
+    ESP_LOGI(TAG, "🕐 Configurando sincronización de tiempo...");
     ntp_initialize();
+    ntp_wait_for_sync();  // Esperar a que se sincronice el tiempo
+    
+    // Inicializar logger DESPUÉS de sincronizar el tiempo
+    ESP_LOGI(TAG, "📝 Inicializando logger con tiempo sincronizado...");
+    ret = logger_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Error inicializando logger: %s", esp_err_to_name(ret));
+        // Continuar sin logger si falla
+    }
     // Mantener el programa funcionando
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));  // Delay de 1 segundo
