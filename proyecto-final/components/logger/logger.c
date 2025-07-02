@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <time.h>
 
 static const char *TAG = "LOGGER";
 
@@ -395,17 +396,14 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
     // Create new event
     logger_event_t new_event;
     new_event.type = event_type;
-    new_event.timestamp = esp_timer_get_time();
+    time(&new_event.timestamp);  // Usar time() para segundos
     new_event.sequence_number = ++g_ring_buffer.total_events;
 
     // Log del evento que se está agregando
-    uint64_t timestamp_s = new_event.timestamp / 1000000;
-    uint64_t timestamp_us = new_event.timestamp % 1000000;
-    ESP_LOGI(TAG, "➕ Adding event: %s, seq=%lu, timestamp=%llu.%06llu s, head=%d", 
+    ESP_LOGI(TAG, "➕ Adding event: %s, seq=%lu, timestamp=%lld, head=%d", 
              logger_event_type_to_string(event_type),
              (unsigned long)new_event.sequence_number,
-             (unsigned long long)timestamp_s,
-             (unsigned long long)timestamp_us,
+             (long long)new_event.timestamp,
              g_ring_buffer.head);
 
     // Add to ring buffer (circular)
@@ -625,14 +623,11 @@ esp_err_t logger_get_all_events_chronological(logger_event_t **events, uint8_t *
         temp_events[temp_count] = g_ring_buffer.events[index];
         
         // Log detallado de cada evento copiado
-        uint64_t timestamp_s = temp_events[temp_count].timestamp / 1000000;
-        uint64_t timestamp_us = temp_events[temp_count].timestamp % 1000000;
-        ESP_LOGI(TAG, "📝 Event[%d] from index[%d]: type=%s, seq=%lu, timestamp=%llu.%06llu s", 
+        ESP_LOGI(TAG, "📝 Event[%d] from index[%d]: type=%s, seq=%lu, timestamp=%lld", 
                  temp_count, index,
                  logger_event_type_to_string(temp_events[temp_count].type),
                  (unsigned long)temp_events[temp_count].sequence_number,
-                 (unsigned long long)timestamp_s,
-                 (unsigned long long)timestamp_us);
+                 (long long)temp_events[temp_count].timestamp);
         
         temp_count++;
     }
@@ -656,14 +651,11 @@ esp_err_t logger_get_all_events_chronological(logger_event_t **events, uint8_t *
     // Log final del orden cronológico
     ESP_LOGI(TAG, "✅ Final chronological order:");
     for (int i = 0; i < temp_count; i++) {
-        uint64_t timestamp_s = temp_events[i].timestamp / 1000000;
-        uint64_t timestamp_us = temp_events[i].timestamp % 1000000;
-        ESP_LOGI(TAG, "📅 [%d] %s: seq=%lu, time=%llu.%06llu s", 
+        ESP_LOGI(TAG, "📅 [%d] %s: seq=%lu, time=%lld", 
                  i,
                  logger_event_type_to_string(temp_events[i].type),
                  (unsigned long)temp_events[i].sequence_number,
-                 (unsigned long long)timestamp_s,
-                 (unsigned long long)timestamp_us);
+                 (long long)temp_events[i].timestamp);
     }
     
     // Copiar eventos ordenados al array de salida
@@ -678,28 +670,32 @@ esp_err_t logger_get_all_events_chronological(logger_event_t **events, uint8_t *
 
 esp_err_t logger_event_to_json(const logger_event_t *event, char *json_buffer, size_t buffer_size)
 {
-    if (event == NULL || json_buffer == NULL || buffer_size < 256) {
+    if (event == NULL || json_buffer == NULL || buffer_size < 300) {
         ESP_LOGE(TAG, "Invalid parameters for JSON conversion");
         return ESP_ERR_INVALID_ARG;
     }
     
-    // Convertir timestamp a segundos y microsegundos para mejor legibilidad
-    uint64_t seconds = event->timestamp / 1000000;
-    uint64_t microseconds = event->timestamp % 1000000;
+    // El timestamp está en segundos (time_t), no en microsegundos
+    time_t timestamp_seconds = event->timestamp;
+    
+    // Formatear fecha y hora en formato legible
+    struct tm *time_info = localtime(&timestamp_seconds);
+    char formatted_time[64];
+    strftime(formatted_time, sizeof(formatted_time), "%Y-%m-%d %H:%M:%S", time_info);
     
     int written = snprintf(json_buffer, buffer_size,
         "{"
         "\"type\":\"%s\","
         "\"sequence\":%lu,"
-        "\"timestamp_us\":%llu,"
-        "\"timestamp_s\":%llu,"
-        "\"timestamp_us_frac\":%llu"
+        "\"timestamp\":\"%s\","
+        "\"timestamp_raw\":%lld,"
+        "\"date\":\"%s\""
         "}",
         logger_event_type_to_string(event->type),
         (unsigned long)event->sequence_number,
-        (unsigned long long)event->timestamp,
-        (unsigned long long)seconds,
-        (unsigned long long)microseconds
+        formatted_time,
+        (long long)timestamp_seconds,
+        formatted_time
     );
     
     if (written >= buffer_size) {
