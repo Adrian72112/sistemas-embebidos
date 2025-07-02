@@ -158,6 +158,9 @@ esp_err_t logger_deinit(void)
 
 esp_err_t logger_log_event(logger_event_type_t event_type)
 {
+    time_t now;
+    time(&now);
+
     if (!g_logger_initialized) {
         ESP_LOGE(TAG, "Logger not initialized");
         return ESP_ERR_INVALID_STATE;
@@ -168,21 +171,13 @@ esp_err_t logger_log_event(logger_event_type_t event_type)
         return ESP_ERR_INVALID_ARG;
     }
 
-    // Add event to ring buffer
     esp_err_t err = logger_ring_buffer_add_event(event_type);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add event to ring buffer: %s", esp_err_to_name(err));
         return err;
     }
 
-    ESP_LOGI(TAG, "Event logged: %s (buffer: %d/%d, total: %" PRIu32 ")", 
-             logger_event_type_to_string(event_type), 
-             g_ring_buffer.count, 
-             LOGGER_RING_BUFFER_SIZE,
-             g_ring_buffer.total_events);
-
-    // Request async save to SPIFFS (non-blocking)
-    logger_request_save_async();
+    logger_request_save_async();  // petición asincrónica de guardado
 
     return ESP_OK;
 }
@@ -403,6 +398,16 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
     new_event.timestamp = esp_timer_get_time();
     new_event.sequence_number = ++g_ring_buffer.total_events;
 
+    // Log del evento que se está agregando
+    uint64_t timestamp_s = new_event.timestamp / 1000000;
+    uint64_t timestamp_us = new_event.timestamp % 1000000;
+    ESP_LOGI(TAG, "➕ Adding event: %s, seq=%lu, timestamp=%llu.%06llu s, head=%d", 
+             logger_event_type_to_string(event_type),
+             (unsigned long)new_event.sequence_number,
+             (unsigned long long)timestamp_s,
+             (unsigned long long)timestamp_us,
+             g_ring_buffer.head);
+
     // Add to ring buffer (circular)
     g_ring_buffer.events[g_ring_buffer.head] = new_event;
     g_ring_buffer.head = (g_ring_buffer.head + 1) % LOGGER_RING_BUFFER_SIZE;
@@ -410,6 +415,9 @@ static esp_err_t logger_ring_buffer_add_event(logger_event_type_t event_type)
     if (g_ring_buffer.count < LOGGER_RING_BUFFER_SIZE) {
         g_ring_buffer.count++;
     }
+
+    ESP_LOGI(TAG, "📊 Buffer updated: count=%d, head=%d, total_events=%lu", 
+             g_ring_buffer.count, g_ring_buffer.head, (unsigned long)g_ring_buffer.total_events);
 
     xSemaphoreGive(g_ring_buffer_mutex);
     
@@ -608,22 +616,54 @@ esp_err_t logger_get_all_events_chronological(logger_event_t **events, uint8_t *
     logger_event_t temp_events[LOGGER_RING_BUFFER_SIZE];
     uint8_t temp_count = 0;
     
+    ESP_LOGI(TAG, "📊 Ring buffer state: count=%d, head=%d, total_events=%lu", 
+             g_ring_buffer.count, g_ring_buffer.head, (unsigned long)g_ring_buffer.total_events);
+    
     // Primero copiamos todos los eventos válidos
     for (int i = 0; i < LOGGER_RING_BUFFER_SIZE && temp_count < g_ring_buffer.count; i++) {
         uint8_t index = (g_ring_buffer.head - g_ring_buffer.count + i + LOGGER_RING_BUFFER_SIZE) % LOGGER_RING_BUFFER_SIZE;
         temp_events[temp_count] = g_ring_buffer.events[index];
+        
+        // Log detallado de cada evento copiado
+        uint64_t timestamp_s = temp_events[temp_count].timestamp / 1000000;
+        uint64_t timestamp_us = temp_events[temp_count].timestamp % 1000000;
+        ESP_LOGI(TAG, "📝 Event[%d] from index[%d]: type=%s, seq=%lu, timestamp=%llu.%06llu s", 
+                 temp_count, index,
+                 logger_event_type_to_string(temp_events[temp_count].type),
+                 (unsigned long)temp_events[temp_count].sequence_number,
+                 (unsigned long long)timestamp_s,
+                 (unsigned long long)timestamp_us);
+        
         temp_count++;
     }
     
     // Ordenar por número de secuencia (burbuja simple, dado que son pocos eventos)
+    ESP_LOGI(TAG, "🔄 Sorting %d events by sequence number...", temp_count);
     for (int i = 0; i < temp_count - 1; i++) {
         for (int j = 0; j < temp_count - i - 1; j++) {
             if (temp_events[j].sequence_number > temp_events[j + 1].sequence_number) {
                 logger_event_t temp = temp_events[j];
                 temp_events[j] = temp_events[j + 1];
                 temp_events[j + 1] = temp;
+                
+                ESP_LOGD(TAG, "🔀 Swapped events: seq %lu <-> seq %lu", 
+                         (unsigned long)temp_events[j + 1].sequence_number,
+                         (unsigned long)temp_events[j].sequence_number);
             }
         }
+    }
+    
+    // Log final del orden cronológico
+    ESP_LOGI(TAG, "✅ Final chronological order:");
+    for (int i = 0; i < temp_count; i++) {
+        uint64_t timestamp_s = temp_events[i].timestamp / 1000000;
+        uint64_t timestamp_us = temp_events[i].timestamp % 1000000;
+        ESP_LOGI(TAG, "📅 [%d] %s: seq=%lu, time=%llu.%06llu s", 
+                 i,
+                 logger_event_type_to_string(temp_events[i].type),
+                 (unsigned long)temp_events[i].sequence_number,
+                 (unsigned long long)timestamp_s,
+                 (unsigned long long)timestamp_us);
     }
     
     // Copiar eventos ordenados al array de salida
@@ -631,7 +671,8 @@ esp_err_t logger_get_all_events_chronological(logger_event_t **events, uint8_t *
     
     xSemaphoreGive(g_ring_buffer_mutex);
     
-    ESP_LOGI(TAG, "Retrieved %d events in chronological order", *count);
+    ESP_LOGI(TAG, "✅ Retrieved %d events in chronological order", *count);
+    ESP_LOGI(TAG, "🚀 Events ready for MQTT synchronization");
     return ESP_OK;
 }
 
