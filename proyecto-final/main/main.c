@@ -28,9 +28,6 @@ led_strip_t *strip = NULL;
 #define PENDING_MESSAGES_QUEUE_SIZE 20
 static QueueHandle_t pending_messages_queue = NULL;
 
-
-
-
 typedef struct {
     int msg_id;
     uint32_t sequence_number;
@@ -213,14 +210,13 @@ void my_callback(const char *topic, const char *data, int len)
     if (strcmp(command, "play") == 0) {
         ESP_LOGI(TAG, "▶️ Comando: PLAY - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
-        while(1) {
-            led_set_color(strip, 0, 0, 255); // azul
-            vTaskDelay(100);
-            led_off(strip);
-            vTaskDelay(100);
-        }
+        
+        // Cambiar estado del LED a PLAY (parpadeo azul)
+        led_set_state(LED_STATE_PLAY);
+        
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PLAY: %s", esp_err_to_name(ret));
+            led_set_state(LED_STATE_ERROR);
         } else {
             ESP_LOGI(TAG, "✅ Evento PLAY enviado correctamente");
         }
@@ -228,9 +224,13 @@ void my_callback(const char *topic, const char *data, int len)
     else if (strcmp(command, "pause") == 0) {
         ESP_LOGI(TAG, "⏸️ Comando: PAUSE - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
-        led_off(strip);
+        
+        // Cambiar estado del LED a PAUSE (apagado)
+        led_set_state(LED_STATE_PAUSE);
+        
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PAUSE: %s", esp_err_to_name(ret));
+            led_set_state(LED_STATE_ERROR);
         } else {
             ESP_LOGI(TAG, "✅ Evento PAUSE enviado correctamente");
         }
@@ -238,9 +238,13 @@ void my_callback(const char *topic, const char *data, int len)
     else if (strcmp(command, "next") == 0) {
         ESP_LOGI(TAG, "⏭️ Comando: NEXT - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_NEXT);
-        led_set_color(strip, 0, 0, 255); // azul
+        
+        // Cambiar estado del LED a NEXT (azul sólido)
+        led_set_state(LED_STATE_NEXT);
+        
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento NEXT: %s", esp_err_to_name(ret));
+            led_set_state(LED_STATE_ERROR);
         } else {
             ESP_LOGI(TAG, "✅ Evento NEXT enviado correctamente");
         }
@@ -248,9 +252,13 @@ void my_callback(const char *topic, const char *data, int len)
     else if (strcmp(command, "previous") == 0) {
         ESP_LOGI(TAG, "⏮️ Comando: PREVIOUS - Enviando evento");
         esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_PREVIOUS);
-        led_set_color(strip, 0, 0, 255); // azul
+        
+        // Cambiar estado del LED a PREVIOUS (azul sólido)
+        led_set_state(LED_STATE_PREVIOUS);
+        
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Error al enviar evento PREVIOUS: %s", esp_err_to_name(ret));
+            led_set_state(LED_STATE_ERROR);
         } else {
             ESP_LOGI(TAG, "✅ Evento PREVIOUS enviado correctamente");
         }
@@ -258,6 +266,9 @@ void my_callback(const char *topic, const char *data, int len)
     else {
         ESP_LOGW(TAG, "⚠️ Comando desconocido: %s", command);
         ESP_LOGI(TAG, "📋 Comandos válidos: play, pause, next, previous");
+        
+        // LED de error por comando desconocido
+        led_set_state(LED_STATE_ERROR);
     }
 }
 
@@ -265,7 +276,16 @@ void app_main(void)
 {
     printf("ESP32-S2 Kaluga Kit - Audio Player con Control MQTT\n");
     printf("=====================================================\n");
-    ESP_ERROR_CHECK( led_init(&strip) );
+    
+    // Inicializar LED básico
+    ESP_ERROR_CHECK(led_init(&strip));
+    
+    // Inicializar controlador del LED con máquina de estados
+    ESP_ERROR_CHECK(led_controller_init(strip));
+    
+    // Indicar inicio con LED azul
+    led_set_state(LED_STATE_OFF);
+    
     // Inicializar NVS, networking y WiFi
     ESP_LOGI(TAG, "🔧 Inicializando sistema...");
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -351,8 +371,14 @@ void app_main(void)
     ret = logger_init();
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Error inicializando logger: %s", esp_err_to_name(ret));
+        led_set_state(LED_STATE_ERROR);
         // Continuar sin logger si falla
+    } else {
+        // Sistema completamente inicializado - LED OFF listo para comandos
+        led_set_state(LED_STATE_OFF);
+        ESP_LOGI(TAG, "🎉 Sistema completamente inicializado!");
     }
+    
     // Mantener el programa funcionando
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));  // Delay de 1 segundo

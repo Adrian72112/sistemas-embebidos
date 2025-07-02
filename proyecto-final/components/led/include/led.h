@@ -1,5 +1,17 @@
 #include "led_strip.h"
 #include "esp_err.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+// Estados del LED para la máquina de estados
+typedef enum {
+    LED_STATE_OFF = 0,       // LED apagado
+    LED_STATE_PLAY,          // LED parpadeando azul (reproduciendo)
+    LED_STATE_PAUSE,         // LED apagado (pausado)
+    LED_STATE_NEXT,          // LED azul sólido (cambio de pista)
+    LED_STATE_PREVIOUS,      // LED azul sólido (cambio de pista)
+    LED_STATE_ERROR          // LED rojo parpadeando (error)
+} led_state_t;
 
 /**
  * @brief Inicializa el LED RGB embebido de la placa ESP32-S2-Kaluga-1
@@ -47,3 +59,33 @@ void led_off(led_strip_t *strip);
  * @param[in] strip Instancia del LED previamente inicializada con led_init
  */
 void led_blink_colors_loop(led_strip_t *strip);
+
+// Nuevas funciones para la máquina de estados
+/**
+ * @brief Inicializa la tarea de control del LED con máquina de estados
+ * 
+ * @param[in] strip Instancia del LED previamente inicializada con led_init
+ * @return
+ *      - ESP_OK si se inicializó correctamente
+ *      - ESP_FAIL si ocurrió un error en la inicialización
+ */
+esp_err_t led_controller_init(led_strip_t *strip);
+
+/**
+ * @brief Cambia el estado del LED
+ * 
+ * @param[in] new_state Nuevo estado del LED
+ */
+void led_set_state(led_state_t new_state);
+
+/**
+ * @brief Obtiene el estado actual del LED
+ * 
+ * @return Estado actual del LED
+ */
+led_state_t led_get_state(void);
+
+/**
+ * @brief Detiene la tarea de control del LED
+ */
+void led_controller_deinit(void);
