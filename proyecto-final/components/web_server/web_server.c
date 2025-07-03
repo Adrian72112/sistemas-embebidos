@@ -30,11 +30,6 @@ extern const uint8_t response_html_end[]   asm("_binary_response_html_end");
 static void restart_task(void *pvParameters);
 static void schedule_restart(int delay_seconds);
 
-// Variables globales para estado del sistema
-static bool is_config_mode = true;
-static char current_wifi_ssid[32] = "No configurado";
-static char current_mqtt_broker[128] = "No configurado";
-
 // Función para determinar el modo actual
 static const char* get_current_mode(void) {
     wifi_config_nvs_t wifi_config;

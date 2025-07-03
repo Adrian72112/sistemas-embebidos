@@ -88,7 +88,7 @@ void mqtt_connected_callback(void)
             "sync_events",
             4096,
             NULL,
-            5,
+            20,
             &sync_task_handle
         );
         

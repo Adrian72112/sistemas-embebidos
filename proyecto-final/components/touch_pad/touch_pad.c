@@ -23,6 +23,8 @@ static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
 static uint32_t last_time[TOUCH_BUTTON_NUM] = {0};
 #define DEBOUNCE_MS 300
 
+static led_strip_t *s_strip = NULL;
+
 // Llamar desde main, justo después de led_init():
 void tp_set_led_strip(led_strip_t *strip) {
     s_strip = strip;
