@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado del Sistema - ESP32</title>
+    <link rel="stylesheet" href="/style.css">
+    <meta http-equiv="refresh" content="5">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Estado del Sistema</h1>
+            <p>Información actual del dispositivo ESP32</p>
+        </header>
+        
+        <main>
+            <div class="form-container">
+                <div class="status-grid">
+                    <div class="status-card">
+                        <h3>📶 Estado WiFi</h3>
+                        <p><strong>Modo:</strong> %s</p>
+                        <p><strong>Red Actual:</strong> %s</p>
+                        <p><strong>IP:</strong> %s</p>
+                        <p><strong>Estado:</strong> <span class="status %s">%s</span></p>
+                    </div>
+                    
+                    <div class="status-card">
+                        <h3>🌐 Estado MQTT</h3>
+                        <p><strong>Broker:</strong> %s</p>
+                        <p><strong>Tópico:</strong> %s</p>
+                        <p><strong>Estado:</strong> <span class="status %s">%s</span></p>
+                    </div>
+                    
+                    <div class="status-card">
+                        <h3>💾 Configuración</h3>
+                        <p><strong>WiFi Configurado:</strong> %s</p>
+                        <p><strong>MQTT Configurado:</strong> %s</p>
+                        <p><strong>Tiempo Activo:</strong> %s</p>
+                    </div>
+                    
+                    <div class="status-card">
+                        <h3>🎵 Sistema Audio</h3>
+                        <p><strong>Estado:</strong> %s</p>
+                        <p><strong>Pista Actual:</strong> %s</p>
+                        <p><strong>Volumen:</strong> %s%%</p>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <a href="/" class="btn-primary">🏠 Inicio</a>
+                    <a href="/config" class="btn-secondary">⚙️ Configurar</a>
+                    <button onclick="location.reload()" class="btn-secondary">🔄 Actualizar</button>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 ESP32 Status System</p>
+            <p>Actualización automática cada 5 segundos</p>
+        </footer>
+    </div>
+</body>
+</html>

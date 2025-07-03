@@ -15,7 +15,8 @@
 #include "led.h"
 #include "ntp_sync.h"
 #include "touch_pad.h"
-#define BROKER_URI "mqtt://broker.hivemq.com"
+#define DEFAULT_BROKER_URI "mqtt://broker.hivemq.com"
+#define DEFAULT_MQTT_TOPIC "/topic/qos1"
 #define MQTT_EVENTS_TOPIC "/esp32/audio/events"
 
 static const char *TAG = "main";
@@ -33,6 +34,10 @@ typedef struct {
     uint32_t sequence_number;
     bool acknowledged;
 } pending_message_t;
+
+// Variables para configuración dinámica
+static char current_broker_uri[128] = DEFAULT_BROKER_URI;
+static char current_mqtt_topic[64] = DEFAULT_MQTT_TOPIC;
 
 // Forward declarations
 void mqtt_published_callback(int msg_id);
@@ -272,6 +277,34 @@ void my_callback(const char *topic, const char *data, int len)
     }
 }
 
+esp_err_t init_mqtt_with_config(void)
+{
+    // Cargar configuración MQTT desde NVS
+    mqtt_config_nvs_t mqtt_config;
+    esp_err_t ret = mqtt_load_config(&mqtt_config);
+    
+    if (ret == ESP_OK && mqtt_config.configured) {
+        ESP_LOGI(TAG, "🌐 Configuración MQTT encontrada, usando: %s", mqtt_config.broker_uri);
+        strcpy(current_broker_uri, mqtt_config.broker_uri);
+        strcpy(current_mqtt_topic, mqtt_config.topic);
+    } else {
+        ESP_LOGI(TAG, "📋 Usando configuración MQTT por defecto: %s", current_broker_uri);
+    }
+    
+    // Inicializar MQTT con la configuración cargada
+    ret = mqtt_lib_init(current_broker_uri, my_callback);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "❌ Error inicializando MQTT: %s", esp_err_to_name(ret));
+        return ret;
+    }
+    
+    // Configurar callbacks para conexión y confirmación de mensajes
+    ESP_ERROR_CHECK(mqtt_lib_set_connected_callback(mqtt_connected_callback));
+    ESP_ERROR_CHECK(mqtt_lib_set_published_callback(mqtt_published_callback));
+    
+    return ESP_OK;
+}
+
 void app_main(void)
 {
     printf("ESP32-S2 Kaluga Kit - Audio Player con Control MQTT\n");
@@ -292,24 +325,29 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     
-    ESP_LOGI(TAG, "📶 Conectando WiFi...");
+    // Inicializar WiFi (con configuración automática desde NVS)
+    ESP_LOGI(TAG, "📶 Inicializando WiFi...");
     ESP_ERROR_CHECK(wifi_connect());
     
-    // Inicializar MQTT
-    ESP_LOGI(TAG, "🌐 Inicializando MQTT...");
-    ESP_ERROR_CHECK(mqtt_lib_init(BROKER_URI, my_callback));
-    
-    // Configurar callbacks para conexión y confirmación de mensajes
-    ESP_ERROR_CHECK(mqtt_lib_set_connected_callback(mqtt_connected_callback));
-    ESP_ERROR_CHECK(mqtt_lib_set_published_callback(mqtt_published_callback));
-    
-    // Inicializar servidor web
+    // Inicializar servidor web (siempre disponible)
     ESP_LOGI(TAG, "🌐 Iniciando servidor web...");
     esp_err_t ret = web_server_start();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Error iniciando servidor web: %s", esp_err_to_name(ret));
-        // Continuar sin servidor web si falla
+        ESP_LOGE(TAG, "❌ Error iniciando servidor web: %s", esp_err_to_name(ret));
+        led_set_state(LED_STATE_ERROR);
+        // Continuar sin servidor web
     }
+    
+    // Verificar si tenemos configuración WiFi para intentar MQTT
+    wifi_config_nvs_t wifi_config;
+    if (wifi_load_config(&wifi_config) == ESP_OK && wifi_config.configured) {
+        ESP_LOGI(TAG, "✅ WiFi configurado, iniciando servicios completos...");
+        
+        // Inicializar MQTT con configuración guardada
+        ret = init_mqtt_with_config();
+        if (ret != ESP_OK) {
+            ESP_LOGW(TAG, "⚠️ Error con MQTT, continuando sin él");
+        }
     
     // Initialize audio controller
     ESP_LOGI(TAG, "🎵 Inicializando audio controller...");
@@ -351,39 +389,42 @@ void app_main(void)
         return;
     }
     
-    ESP_LOGI(TAG, "✅ Sistema listo! Esperando comandos MQTT...");
-    ESP_LOGI(TAG, "📋 Comandos disponibles: play, pause, next, previous");
-    ESP_LOGI(TAG, "🌐 Control web disponible en:");
-    ESP_LOGI(TAG, "   - AP: http://192.168.4.1/ (red 'ConfiguradorESP')");
-    ESP_LOGI(TAG, "   - Si conectado a STA: http://[IP_LOCAL]/");
     ESP_LOGI(TAG, "🎼 Playlist cargada con %d pistas:", 6);
-    for (int i = 0; i < 6; i++) {
-        ESP_LOGI(TAG, "  - %s", tracks[i].name);
-    }
-    
-    // Inicializar y sincronizar NTP ANTES de inicializar el logger
-    ESP_LOGI(TAG, "🕐 Configurando sincronización de tiempo...");
-    ntp_initialize();
-    ntp_wait_for_sync();  // Esperar a que se sincronice el tiempo
-    
-    // Inicializar logger DESPUÉS de sincronizar el tiempo
-    ESP_LOGI(TAG, "📝 Inicializando logger con tiempo sincronizado...");
-    ret = logger_init();
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Error inicializando logger: %s", esp_err_to_name(ret));
-        led_set_state(LED_STATE_ERROR);
-        // Continuar sin logger si falla
-    } else {
-        // Sistema completamente inicializado - LED OFF listo para comandos
-        led_set_state(LED_STATE_OFF);
-        ESP_LOGI(TAG, "🎉 Sistema completamente inicializado!");
-    }
+        for (int i = 0; i < 6; i++) {
+            ESP_LOGI(TAG, "   %d. %s (%d bytes)", i+1, tracks[i].name, tracks[i].size);
+        }
+        
+        // Inicializar y sincronizar NTP ANTES de inicializar el logger
+        ESP_LOGI(TAG, "🕐 Configurando sincronización de tiempo...");
+        ntp_initialize();
+        ntp_wait_for_sync();  // Esperar a que se sincronice el tiempo
+        
+        // Inicializar logger DESPUÉS de sincronizar el tiempo
+        ESP_LOGI(TAG, "📝 Inicializando logger con tiempo sincronizado...");
+        ret = logger_init();
+        if (ret != ESP_OK) {
+            ESP_LOGW(TAG, "⚠️ Error inicializando logger: %s", esp_err_to_name(ret));
+            // Continuar sin logger si falla
+        }
 
-    configure_touch_pad();
-    tp_set_led_strip(strip); 
-    xTaskCreate(tp_read, "tp_read_task", 4096, NULL, 5, NULL);
+        configure_touch_pad();
+        tp_set_led_strip(strip); 
+        xTaskCreate(tp_read, "tp_read_task", 4096, NULL, 5, NULL);
+        
+        ESP_LOGI(TAG, "✅ Sistema completo iniciado!");
+        ESP_LOGI(TAG, "📋 Comandos disponibles: play, pause, next, previous");
+        ESP_LOGI(TAG, "🌐 Control web disponible en http://[IP_LOCAL]/");
+        
+    } else {
+        ESP_LOGI(TAG, "⚙️ Modo configuración - WiFi no configurado");
+        ESP_LOGI(TAG, "🌐 Conecta a la red 'ESP32-Config' (password: config123)");
+        ESP_LOGI(TAG, "🔧 Accede a http://192.168.4.1/ para configurar WiFi y MQTT");
+        led_set_state(LED_STATE_PAUSE); // LED apagado en modo configuración
+    }
+    
+    ESP_LOGI(TAG, "🚀 Sistema listo!");
     
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay de 1 segundo
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

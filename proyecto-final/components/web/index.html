@@ -3,31 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comando MQTT</title>
+    <title>ESP32 Control Center</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Control ESP32</h1>
-            <p>Sistema de envío de comandos MQTT</p>
+            <h1>🎛️ ESP32 Control Center</h1>
+            <p>Sistema de control y configuración</p>
         </header>
         
         <main>
             <div class="form-container">
-                <h2>Enviar Comando</h2>
-                <form action="/comando" method="get">
-                    <div class="input-group">
-                        <label for="cmd">Comando:</label>
-                        <input type="text" id="cmd" name="cmd" placeholder="Escribe un comando" required>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <h3>🎮 Control MQTT</h3>
+                        <p>Envía comandos al sistema de audio</p>
+                        <form action="/comando" method="get" style="margin-top: 15px;">
+                            <div class="input-group">
+                                <label for="cmd">Comando:</label>
+                                <select id="cmd" name="cmd" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+                                    <option value="play">▶️ Reproducir</option>
+                                    <option value="pause">⏸️ Pausar</option>
+                                    <option value="next">⏭️ Siguiente</option>
+                                    <option value="previous">⏮️ Anterior</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary">Enviar Comando</button>
+                        </form>
                     </div>
-                    <button type="submit" class="btn-primary">Enviar</button>
-                </form>
+                    
+                    <div class="status-card">
+                        <h3>⚙️ Configuración</h3>
+                        <p>Configura WiFi y MQTT</p>
+                        <div style="margin-top: 15px;">
+                            <a href="/config" class="btn-secondary" style="width: 100%; text-align: center;">🔧 Configurar Sistema</a>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <h3>📊 Estado</h3>
+                        <p>Ver información del sistema</p>
+                        <div style="margin-top: 15px;">
+                            <a href="/status" class="btn-secondary" style="width: 100%; text-align: center;">📈 Ver Estado</a>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card">
+                        <h3>🗑️ Mantenimiento</h3>
+                        <p>Reiniciar o limpiar configuración</p>
+                        <div style="margin-top: 15px;">
+                            <a href="/clear_config" class="btn-danger" style="width: 100%; text-align: center;" onclick="return confirm('¿Borrar toda la configuración?')">🔄 Reset Factory</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
         
         <footer>
             <p>&copy; 2025 ESP32 Control System</p>
+            <p>Firmware: v2.0.0 | Modo: %s</p>
         </footer>
     </div>
 </body>

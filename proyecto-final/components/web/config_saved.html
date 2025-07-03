@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración Guardada - ESP32</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 Configuración ESP32</h1>
+            <p>Sistema de configuración WiFi y MQTT</p>
+        </header>
+        
+        <main>
+            <div class="form-container">
+                <div class="success-message">
+                    <h2>✅ Configuración Guardada</h2>
+                    <p>Tu configuración ha sido guardada correctamente en la memoria del dispositivo.</p>
+                    
+                    <div class="info-box">
+                        <h3>📋 Configuración Aplicada:</h3>
+                        <p><strong>WiFi SSID:</strong> %s</p>
+                        <p><strong>MQTT Broker:</strong> %s</p>
+                        <p><strong>MQTT Tópico:</strong> %s</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h3>⚠️ Próximos Pasos:</h3>
+                        <p>1. El dispositivo se reiniciará automáticamente en 10 segundos</p>
+                        <p>2. Se conectará a la red WiFi configurada</p>
+                        <p>3. Iniciará el servicio MQTT con la configuración guardada</p>
+                        <p>4. El servidor web estará disponible en la nueva IP</p>
+                    </div>
+                    
+                    <div class="actions">
+                        <a href="/" class="btn-secondary">🔙 Volver al Inicio</a>
+                        <button onclick="location.reload()" class="btn-primary">🔄 Actualizar Estado</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 ESP32 Configuration System</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Reiniciar automáticamente después de 10 segundos
+        setTimeout(function() {
+            document.body.innerHTML = '<div style="text-align:center; padding:50px; font-family:Arial;"><h2>🔄 Reiniciando...</h2><p>El dispositivo se está reiniciando para aplicar la nueva configuración.</p></div>';
+        }, 10000);
+    </script>
+</body>
+</html>
