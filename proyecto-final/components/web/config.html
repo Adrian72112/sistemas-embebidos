@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración ESP32</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 Configuración ESP32</h1>
+            <p>Configura tu dispositivo WiFi y MQTT</p>
+        </header>
+        
+        <main>
+            <div class="form-container">
+                <h2>📶 Configuración WiFi</h2>
+                <form action="/save_config" method="get">
+                    <div class="input-group">
+                        <label for="wifi_ssid">Red WiFi (SSID):</label>
+                        <input type="text" id="wifi_ssid" name="wifi_ssid" placeholder="Nombre de la red WiFi" required maxlength="31">
+                    </div>
+                    <div class="input-group">
+                        <label for="wifi_password">Contraseña WiFi:</label>
+                        <input type="password" id="wifi_password" name="wifi_password" placeholder="Contraseña de la red WiFi" maxlength="63">
+                    </div>
+                    
+                    <h2>🌐 Configuración MQTT</h2>
+                    <div class="input-group">
+                        <label for="mqtt_broker">Broker MQTT:</label>
+                        <input type="text" id="mqtt_broker" name="mqtt_broker" placeholder="mqtt://broker.hivemq.com" required maxlength="127">
+                    </div>
+                    <div class="input-group">
+                        <label for="mqtt_topic">Tópico MQTT:</label>
+                        <input type="text" id="mqtt_topic" name="mqtt_topic" placeholder="/topic/qos1" required maxlength="63">
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">💾 Guardar Configuración</button>
+                </form>
+                
+                <div class="actions">
+                    <a href="/status" class="btn-secondary">📊 Ver Estado</a>
+                    <a href="/clear_config" class="btn-danger" onclick="return confirm('¿Estás seguro de borrar toda la configuración?')">🗑️ Borrar Configuración</a>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 ESP32 Configuration System</p>
+            <p>Versión: 1.0.0</p>
+        </footer>
+    </div>
+</body>
+</html>

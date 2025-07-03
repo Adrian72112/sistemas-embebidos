@@ -39,6 +39,8 @@ typedef enum {
     LOGGER_EVENT_PAUSE,         ///< Reproducción pausada
     LOGGER_EVENT_NEXT,          ///< Siguiente pista seleccionada
     LOGGER_EVENT_PREVIOUS,      ///< Pista anterior seleccionada
+    LOGGER_EVENT_VOLUME_UP,     ///< Volumen subido
+    LOGGER_EVENT_VOLUME_DOWN,   ///< Volumen bajado
     LOGGER_EVENT_STOP           ///< Reproducción detenida
 } logger_event_type_t;
 

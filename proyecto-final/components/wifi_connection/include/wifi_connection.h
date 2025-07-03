@@ -23,17 +23,77 @@
 #define WIFI_INTERFACE get_wifi_netif_from_desc(WIFI_NETIF_DESC_STA)
 #define get_wifi_netif() get_wifi_netif_from_desc(WIFI_NETIF_DESC_STA)
 
+// Estructura para configuración WiFi
+typedef struct {
+    char ssid[32];
+    char password[64];
+    bool configured;
+} wifi_config_nvs_t;
+
+// Estructura para configuración MQTT
+typedef struct {
+    char broker_uri[128];
+    char topic[64];
+    bool configured;
+} mqtt_config_nvs_t;
+
 /**
- * @brief Configura WiFi en modo AP+STA y establece conexión
- *
- * Esta función:
- * - Configura el ESP32 como Access Point (ConfiguradorESP)
- * - Se conecta a la red WiFi configurada (SeTeLINK)
- * - Inicia el servidor web automáticamente
- *
- * @return ESP_OK si la configuración es exitosa
+ * @brief Inicializa WiFi según configuración guardada en NVS
+ * 
+ * Si existe configuración WiFi guardada, se conecta a esa red.
+ * Si no existe configuración, levanta solo en modo AP para configuración.
+ * 
+ * @return ESP_OK si la inicialización es exitosa
  */
 esp_err_t wifi_connect(void);
+
+/**
+ * @brief Inicia WiFi solo en modo AP para configuración
+ * 
+ * @return ESP_OK si el AP se inicia correctamente
+ */
+esp_err_t wifi_start_config_ap(void);
+
+/**
+ * @brief Guarda configuración WiFi en NVS
+ * 
+ * @param ssid SSID de la red WiFi
+ * @param password Contraseña de la red WiFi
+ * @return ESP_OK si se guarda correctamente
+ */
+esp_err_t wifi_save_config(const char* ssid, const char* password);
+
+/**
+ * @brief Carga configuración WiFi desde NVS
+ * 
+ * @param config Puntero a estructura donde cargar la configuración
+ * @return ESP_OK si se carga correctamente
+ */
+esp_err_t wifi_load_config(wifi_config_nvs_t* config);
+
+/**
+ * @brief Guarda configuración MQTT en NVS
+ * 
+ * @param broker_uri URI del broker MQTT
+ * @param topic Tópico MQTT por defecto
+ * @return ESP_OK si se guarda correctamente
+ */
+esp_err_t mqtt_save_config(const char* broker_uri, const char* topic);
+
+/**
+ * @brief Carga configuración MQTT desde NVS
+ * 
+ * @param config Puntero a estructura donde cargar la configuración
+ * @return ESP_OK si se carga correctamente
+ */
+esp_err_t mqtt_load_config(mqtt_config_nvs_t* config);
+
+/**
+ * @brief Borra toda la configuración guardada en NVS
+ * 
+ * @return ESP_OK si se borra correctamente
+ */
+esp_err_t wifi_clear_config(void);
 
 /**
  * @brief Get the WiFi netif handle by description

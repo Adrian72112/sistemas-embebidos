@@ -32,6 +32,7 @@ static SemaphoreHandle_t player_mutex = NULL;
 static QueueHandle_t event_queue = NULL;
 static bool stop_current_track = false;
 static bool is_paused = false;
+static uint8_t current_volume = 50; // Volumen actual (0-100)
 
 // Declaraciones anticipadas
 static void audio_play_task(void *args);
@@ -40,6 +41,8 @@ static esp_err_t audio_controller_play_internal(void);
 static esp_err_t audio_controller_pause_internal(void);
 static esp_err_t audio_controller_next_internal(void);
 static esp_err_t audio_controller_previous_internal(void);
+static esp_err_t audio_controller_volume_up_internal(void);
+static esp_err_t audio_controller_volume_down_internal(void);
 
 esp_err_t audio_controller_init(const audio_controller_config_t *config)
 {
@@ -84,6 +87,9 @@ esp_err_t audio_controller_init(const audio_controller_config_t *config)
     // Inicializar codec ES8311
     ESP_RETURN_ON_ERROR(es8311_codec_init(config->sample_rate, config->volume, config->microphone_enabled),
                        TAG, "Failed to initialize ES8311 codec");
+    
+    // Guardar volumen inicial
+    current_volume = config->volume;
     
     is_initialized = true;
     ESP_LOGI(TAG, "Audio controller initialized successfully with event system");
@@ -175,6 +181,16 @@ static void audio_event_task(void *args)
                 case AUDIO_EVENT_PREVIOUS:
                     ESP_LOGI(TAG, "⏮️ Processing PREVIOUS event");
                     audio_controller_previous_internal();
+                    break;
+                    
+                case AUDIO_EVENT_VOLUME_UP:
+                    ESP_LOGI(TAG, "🔊 Processing VOLUME UP event");
+                    audio_controller_volume_up_internal();
+                    break;
+                    
+                case AUDIO_EVENT_VOLUME_DOWN:
+                    ESP_LOGI(TAG, "🔉 Processing VOLUME DOWN event");
+                    audio_controller_volume_down_internal();
                     break;
                     
                 case AUDIO_EVENT_STOP:
@@ -456,4 +472,65 @@ static void audio_play_task(void *args)
     
     audio_task_handle = NULL;
     vTaskDelete(NULL);
+}
+
+static esp_err_t audio_controller_volume_up_internal(void)
+{
+    ESP_RETURN_ON_FALSE(is_initialized, ESP_ERR_INVALID_STATE, TAG, "Not initialized");
+    
+    if (xSemaphoreTake(player_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
+    
+    // Incrementar volumen en pasos de 10, máximo 100
+    if (current_volume < 100) {
+        current_volume += 10;
+        if (current_volume > 100) {
+            current_volume = 100;
+        }
+        
+        esp_err_t ret = es8311_codec_set_volume(current_volume);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "🔊 Volume UP: %d", current_volume);
+            logger_log_event(LOGGER_EVENT_VOLUME_UP);
+        } else {
+            ESP_LOGE(TAG, "Failed to set volume: %s", esp_err_to_name(ret));
+        }
+    } else {
+        ESP_LOGI(TAG, "🔊 Volume already at maximum: %d", current_volume);
+    }
+    
+    xSemaphoreGive(player_mutex);
+    return ESP_OK;
+}
+
+static esp_err_t audio_controller_volume_down_internal(void)
+{
+    ESP_RETURN_ON_FALSE(is_initialized, ESP_ERR_INVALID_STATE, TAG, "Not initialized");
+    
+    if (xSemaphoreTake(player_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
+    
+    // Decrementar volumen en pasos de 10, mínimo 0
+    if (current_volume > 0) {
+        if (current_volume >= 10) {
+            current_volume -= 10;
+        } else {
+            current_volume = 0;
+        }
+        
+        esp_err_t ret = es8311_codec_set_volume(current_volume);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "🔉 Volume DOWN: %d", current_volume);
+            logger_log_event(LOGGER_EVENT_VOLUME_DOWN);
+        } else {
+            ESP_LOGE(TAG, "Failed to set volume: %s", esp_err_to_name(ret));
+        }
+    } else {
+        ESP_LOGI(TAG, "🔉 Volume already at minimum: %d", current_volume);
+    }
+    
+    xSemaphoreGive(player_mutex);
+    return ESP_OK;
 }
