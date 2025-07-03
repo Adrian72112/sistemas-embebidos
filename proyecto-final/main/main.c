@@ -279,8 +279,7 @@ esp_err_t init_mqtt_with_config(void)
     return ESP_OK;
 }
 
-void app_main(void)
-{
+void app_main(void) {
     printf("ESP32-S2 Kaluga Kit - Audio Player con Control MQTT\n");
     printf("=====================================================\n");
     
@@ -392,4 +391,5 @@ void app_main(void)
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+}
 }
