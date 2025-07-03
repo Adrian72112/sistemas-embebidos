@@ -22,10 +22,6 @@ static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
 
 // Estado global del LED
 static led_strip_t *s_strip = NULL;
-static uint8_t    s_brightness    = 128;  // 0–255
-static uint8_t    s_color_r       = 255;
-static uint8_t    s_color_g       = 255;
-static uint8_t    s_color_b       = 255;
 
 // Debounce muy básico (evitamos así lecturas repetidas)
 static uint32_t last_time[TOUCH_BUTTON_NUM] = {0};
@@ -92,16 +88,15 @@ void tp_read(void *pvParameters)
 
                     case TOUCH_PAD_NUM5:  // RECORD -> rojo
                         ESP_LOGI(TAG, "TOUCH STOP: enviando evento STOP");
-                        ret = audio_controller_send_event(AUDIO_EVENT_STOP);
+                        ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
                         if (ret != ESP_OK) {
-                            ESP_LOGE(TAG, "Error al enviar evento STOP desde touch: %s", esp_err_to_name(ret));
+                            ESP_LOGE(TAG, "Error al enviar evento PAUSE desde touch: %s", esp_err_to_name(ret));
                         }
                         break;
 
 
                     /*case TOUCH_PAD_NUM11: // NETWORK -> azul
                         ESP_LOGI(TAG, "NETWORK: color=Azul");
-                        s_color_r = 0; s_color_g = 0; s_color_b = 255;
                         led_set_color(s_strip,
                             0, 0, (255 * s_brightness) / 255
                         );
