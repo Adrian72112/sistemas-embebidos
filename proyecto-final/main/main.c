@@ -327,7 +327,12 @@ void app_main(void)
     
     // Inicializar WiFi (con configuración automática desde NVS)
     ESP_LOGI(TAG, "📶 Inicializando WiFi...");
-    ESP_ERROR_CHECK(wifi_connect());
+    esp_err_t wifi_ret = wifi_connect();
+    if (wifi_ret != ESP_OK) {
+        ESP_LOGW(TAG, "⚠️ WiFi no conectado completamente: %s", esp_err_to_name(wifi_ret));
+        ESP_LOGI(TAG, "📡 AP disponible para configuración en http://192.168.4.1/");
+        // Continuar ejecución - AP sigue disponible para configuración
+    }
     
     // Inicializar servidor web (siempre disponible)
     ESP_LOGI(TAG, "🌐 Iniciando servidor web...");

@@ -95,7 +95,10 @@ static void handler_on_wifi_disconnect(void *arg, esp_event_base_t event_base,
     if (err == ESP_ERR_WIFI_NOT_STARTED) {
         return;
     }
-    ESP_ERROR_CHECK(err);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "❌ Error en reconexión WiFi: %s", esp_err_to_name(err));
+        return;
+    }
 }
 
 static void handler_on_wifi_connect(void *esp_netif, esp_event_base_t event_base,
@@ -367,16 +370,10 @@ esp_err_t wifi_clear_config(void)
 }
 
 /* WiFi connection functions */
-esp_err_t wifi_start_config_ap(void)
+
+static esp_err_t wifi_init_ap_sta(void)
 {
-    ESP_LOGI(TAG, "🔧 Iniciando WiFi en modo AP (configuración)");
-    
-    if (wifi_initialized) {
-        ESP_LOGW(TAG, "⚠️ WiFi ya está inicializado");
-        return ESP_OK;
-    }
-    
-    config_mode = true;
+    ESP_LOGI(TAG, "🔧 Inicializando WiFi en modo AP+STA");
     
     // Inicializar WiFi
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -384,8 +381,11 @@ esp_err_t wifi_start_config_ap(void)
 
     // Crear interfaz Access Point
     s_wifi_ap_netif = esp_netif_create_default_wifi_ap();
+    
+    // Crear interfaz Station
+    s_wifi_sta_netif = esp_netif_create_default_wifi_sta();
 
-    // Configuración de Access Point
+    // Configuración de Access Point (siempre disponible)
     wifi_config_t wifi_ap_config = {
         .ap = {
             .ssid = "ESP32-Config",
@@ -396,55 +396,54 @@ esp_err_t wifi_start_config_ap(void)
         }
     };
 
+    // Configurar modo AP+STA
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_ap_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
     wifi_initialized = true;
 
-    ESP_LOGI(TAG, "✅ WiFi AP iniciado para configuración");
+    ESP_LOGI(TAG, "✅ WiFi AP+STA iniciado");
     ESP_LOGI(TAG, "📡 AP SSID: ESP32-Config, contraseña: config123");
     ESP_LOGI(TAG, "🌐 Accede a http://192.168.4.1/ para configurar");
 
     return ESP_OK;
 }
 
-static esp_err_t wifi_connect_with_config(const wifi_config_nvs_t* wifi_cfg)
+esp_err_t wifi_start_config_ap(void)
 {
-    ESP_LOGI(TAG, "🔧 Conectando WiFi con configuración guardada");
+    ESP_LOGI(TAG, "🔧 AP ya está disponible para configuración");
     
-    if (wifi_initialized) {
-        ESP_LOGW(TAG, "⚠️ WiFi ya está inicializado");
-        return ESP_OK;
+    if (!wifi_initialized) {
+        return wifi_init_ap_sta();
     }
     
-    config_mode = false;
+    ESP_LOGI(TAG, "📡 AP SSID: ESP32-Config, contraseña: config123");
+    ESP_LOGI(TAG, "🌐 Accede a http://192.168.4.1/ para configurar");
+    return ESP_OK;
+}
+
+static esp_err_t wifi_connect_sta_with_config(const wifi_config_nvs_t* wifi_cfg)
+{
+    ESP_LOGI(TAG, "🔧 Configurando STA con datos guardados");
     
-    // Inicializar WiFi
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    // Crear interfaz Station
-    esp_netif_inherent_config_t esp_netif_config_sta = ESP_NETIF_INHERENT_DEFAULT_WIFI_STA();
-    esp_netif_config_sta.if_desc = WIFI_NETIF_DESC_STA;
-    esp_netif_config_sta.route_prio = 128;
-    s_wifi_sta_netif = esp_netif_create_wifi(WIFI_IF_STA, &esp_netif_config_sta);
-    esp_wifi_set_default_wifi_sta_handlers();
-
-    // Crear semáforos
-    s_semph_get_ip_addrs = xSemaphoreCreateBinary();
+    // Crear semáforos si no existen
     if (s_semph_get_ip_addrs == NULL) {
-        return ESP_ERR_NO_MEM;
+        s_semph_get_ip_addrs = xSemaphoreCreateBinary();
+        if (s_semph_get_ip_addrs == NULL) {
+            return ESP_ERR_NO_MEM;
+        }
     }
-
-    s_semph_get_ip6_addrs = xSemaphoreCreateBinary();
+    
     if (s_semph_get_ip6_addrs == NULL) {
-        vSemaphoreDelete(s_semph_get_ip_addrs);
-        return ESP_ERR_NO_MEM;
+        s_semph_get_ip6_addrs = xSemaphoreCreateBinary();
+        if (s_semph_get_ip6_addrs == NULL) {
+            return ESP_ERR_NO_MEM;
+        }
     }
 
-    // Registrar event handlers
+    // Registrar event handlers solo para STA
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_START, 
                                              &handler_on_wifi_disconnect, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, 
@@ -465,38 +464,66 @@ static esp_err_t wifi_connect_with_config(const wifi_config_nvs_t* wifi_cfg)
     wifi_sta_config.sta.threshold.rssi = -127;
     wifi_sta_config.sta.threshold.authmode = WIFI_SCAN_AUTH_MODE_THRESHOLD;
 
-    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_sta_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
+    // Configurar STA (AP ya está configurado)
+    esp_err_t ret = esp_wifi_set_config(WIFI_IF_STA, &wifi_sta_config);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "❌ Error configurando STA: %s", esp_err_to_name(ret));
+        return ret;
+    }
 
-    wifi_initialized = true;
+    ESP_LOGI(TAG, "🔗 Conectando STA a WiFi: %s", wifi_cfg->ssid);
 
-    ESP_LOGI(TAG, "🔗 Conectando a WiFi: %s", wifi_cfg->ssid);
+    // Resetear contador de reintentos
+    s_retry_num = 0;
 
-    // Esperar a obtener IP (con timeout)
-    if (xSemaphoreTake(s_semph_get_ip_addrs, pdMS_TO_TICKS(15000)) == pdTRUE) {
-        ESP_LOGI(TAG, "🎉 Conexión WiFi exitosa");
+    // Intentar conectar STA
+    ret = esp_wifi_connect();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "❌ Error iniciando conexión STA: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    // Esperar a obtener IP (con timeout más corto para no bloquear el boot)
+    if (xSemaphoreTake(s_semph_get_ip_addrs, pdMS_TO_TICKS(10000)) == pdTRUE) {
+        ESP_LOGI(TAG, "🎉 Conexión STA exitosa");
         return ESP_OK;
     } else {
-        ESP_LOGE(TAG, "❌ Timeout conectando a WiFi");
+        ESP_LOGW(TAG, "⚠️ Timeout conectando STA - AP sigue disponible");
         return ESP_ERR_TIMEOUT;
     }
 }
 
 esp_err_t wifi_connect(void)
 {
-    ESP_LOGI(TAG, "🚀 Iniciando sistema WiFi");
+    ESP_LOGI(TAG, "🚀 Iniciando sistema WiFi (AP+STA)");
+    
+    if (wifi_initialized) {
+        ESP_LOGW(TAG, "⚠️ WiFi ya está inicializado");
+        return ESP_OK;
+    }
+    
+    // Siempre inicializar en modo AP+STA
+    esp_err_t ret = wifi_init_ap_sta();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "❌ Error inicializando WiFi AP+STA: %s", esp_err_to_name(ret));
+        return ret;
+    }
     
     // Intentar cargar configuración WiFi desde NVS
     wifi_config_nvs_t wifi_config;
-    esp_err_t ret = wifi_load_config(&wifi_config);
+    ret = wifi_load_config(&wifi_config);
     
     if (ret == ESP_OK && wifi_config.configured) {
-        ESP_LOGI(TAG, "📋 Configuración WiFi encontrada, conectando...");
-        return wifi_connect_with_config(&wifi_config);
+        ESP_LOGI(TAG, "📋 Configuración WiFi encontrada, intentando conectar STA...");
+        ret = wifi_connect_sta_with_config(&wifi_config);
+        if (ret != ESP_OK) {
+            ESP_LOGW(TAG, "⚠️ Falló conexión STA, pero AP sigue disponible para reconfiguración");
+        }
     } else {
-        ESP_LOGI(TAG, "⚙️ No hay configuración WiFi, iniciando modo configuración");
-        return wifi_start_config_ap();
+        ESP_LOGI(TAG, "⚙️ No hay configuración WiFi guardada");
+        ESP_LOGI(TAG, "📡 Solo AP activo - accede a http://192.168.4.1/ para configurar");
     }
+    
+    // Siempre retornar OK - AP está disponible
+    return ESP_OK;
 }
