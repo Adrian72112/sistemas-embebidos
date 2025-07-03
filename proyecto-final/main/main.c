@@ -380,7 +380,6 @@ void app_main(void)
     }
 
     configure_touch_pad();
-    tp_set_led_strip(strip); 
     xTaskCreate(tp_read, "tp_read_task", 4096, NULL, 5, NULL);
     
     while (1) {

@@ -23,18 +23,9 @@ static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
 static uint32_t last_time[TOUCH_BUTTON_NUM] = {0};
 #define DEBOUNCE_MS 300
 
-// Llamar desde main, justo después de led_init():
-void tp_set_led_strip(led_strip_t *strip) {
-    s_strip = strip;
-}
-
 void tp_read(void *pvParameters)
 {
-    if (!s_strip) {
-        ESP_LOGE(TAG, "tp_set_led_strip() NO fue llamado antes de tp_read()");
-        return;
-    }
-
+   
     uint32_t touch_value;
     uint64_t now;
 
@@ -73,7 +64,8 @@ void tp_read(void *pvParameters)
 
                     case TOUCH_PAD_NUM2:  // PLAY
                         ESP_LOGI(TAG, "▶ TOUCH PLAY: enviando evento PLAY");
-                        ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
+                        ret = audio_controller_send_event(AUDIO_EVENT_PLAY); 
+                        led_set_state(LED_STATE_PLAY); 
                         if (ret != ESP_OK) {
                             ESP_LOGE(TAG, "Error al enviar evento PLAY desde touch: %s", esp_err_to_name(ret));
                         } 
@@ -82,6 +74,7 @@ void tp_read(void *pvParameters)
                     case TOUCH_PAD_NUM5:  // RECORD/PAUSE
                         ESP_LOGI(TAG, "TOUCH STOP: enviando evento PAUSE");
                         ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
+                        led_set_state(LED_STATE_PAUSE); 
                         if (ret != ESP_OK) {
                             ESP_LOGE(TAG, "Error al enviar evento PAUSE desde touch: %s", esp_err_to_name(ret));
                         }
