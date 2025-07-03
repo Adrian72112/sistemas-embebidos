@@ -25,22 +25,12 @@ static const char *TAG = "main";
 static bool mqtt_connection_established = false;
 static TaskHandle_t sync_task_handle = NULL;
 led_strip_t *strip = NULL;
-// Queue para manejar acknowledgments de mensajes publicados
-#define PENDING_MESSAGES_QUEUE_SIZE 20
-static QueueHandle_t pending_messages_queue = NULL;
-
-typedef struct {
-    int msg_id;
-    uint32_t sequence_number;
-    bool acknowledged;
-} pending_message_t;
 
 // Variables para configuración dinámica
 static char current_broker_uri[128] = DEFAULT_BROKER_URI;
 static char current_mqtt_topic[64] = DEFAULT_MQTT_TOPIC;
 
 // Forward declarations
-void mqtt_published_callback(int msg_id);
 void mqtt_connected_callback(void);
 void sync_events_task(void *pvParameters);
 
@@ -62,18 +52,6 @@ extern const uint8_t music5_pcm_end[]   asm("_binary_lose_pcm_end");
 
 extern const uint8_t music6_pcm_start[] asm("_binary_buenass_pcm_start");
 extern const uint8_t music6_pcm_end[]   asm("_binary_buenass_pcm_end");
-
-// Callback para manejar acknowledgments de mensajes publicados
-void mqtt_published_callback(int msg_id)
-{
-    ESP_LOGI(TAG, "📨 MQTT message acknowledged: msg_id=%d", msg_id);
-    
-    // Marcar el mensaje como confirmado en la cola de pendientes
-    if (pending_messages_queue != NULL) {
-        pending_message_t msg = { .msg_id = msg_id, .acknowledged = true };
-        xQueueSend(pending_messages_queue, &msg, 0); // No bloquear
-    }
-}
 
 // Callback para cuando se establece la conexión MQTT
 void mqtt_connected_callback(void)
@@ -103,14 +81,6 @@ void sync_events_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "🔄 Iniciando tarea de sincronización de eventos");
     
-    // Crear cola para mensajes pendientes
-    pending_messages_queue = xQueueCreate(PENDING_MESSAGES_QUEUE_SIZE, sizeof(pending_message_t));
-    if (pending_messages_queue == NULL) {
-        ESP_LOGE(TAG, "Failed to create pending messages queue");
-        vTaskDelete(NULL);
-        return;
-    }
-    
     // Esperar a que esté inicializado el logger
     while (!logger_get_event_count()) {
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -127,72 +97,55 @@ void sync_events_task(void *pvParameters)
         return;
     }
     
-    ESP_LOGI(TAG, "📋 Sincronizando %d eventos con MQTT broker", event_count);
+    ESP_LOGI(TAG, "📋 Enviando %d eventos como array JSON", event_count);
     
-    // Enviar cada evento y esperar confirmación
+    if (!mqtt_lib_is_connected()) {
+        ESP_LOGW(TAG, "MQTT not connected, skipping sync");
+        free(events);
+        sync_task_handle = NULL;
+        vTaskDelete(NULL);
+        return;
+    }
+    
+    // Crear buffer para el array JSON completo
+    char *json_array = malloc(event_count * 512 + 100); // Buffer generoso
+    if (!json_array) {
+        ESP_LOGE(TAG, "Failed to allocate memory for JSON array");
+        free(events);
+        sync_task_handle = NULL;
+        vTaskDelete(NULL);
+        return;
+    }
+    
+    strcpy(json_array, "[");
+    
+    // Convertir todos los eventos a JSON y concatenar
     for (int i = 0; i < event_count; i++) {
-        if (!mqtt_lib_is_connected()) {
-            ESP_LOGW(TAG, "MQTT connection lost during sync");
-            break;
-        }
-        
-        // Convertir evento a JSON
         char json_buffer[512];
         ret = logger_event_to_json(&events[i], json_buffer, sizeof(json_buffer));
-        if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to convert event %d to JSON", i);
-            continue;
-        }
-        
-        // Publicar con QoS 1 (garantía de entrega)
-        ret = mqtt_lib_publish(MQTT_EVENTS_TOPIC, json_buffer, strlen(json_buffer), 1);
-        if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to publish event %d", i);
-            continue;
-        }
-        
-        ESP_LOGI(TAG, "📤 Evento %d/%d enviado: %s (seq: %lu)", 
-                 i + 1, event_count, 
-                 logger_event_type_to_string(events[i].type),
-                 (unsigned long)events[i].sequence_number);
-        
-        // Esperar confirmación con timeout
-        pending_message_t ack_msg;
-        bool acknowledged = false;
-        int timeout_ms = 5000; // 5 segundos timeout
-        int wait_time = 0;
-        
-        while (wait_time < timeout_ms && !acknowledged) {
-            if (xQueueReceive(pending_messages_queue, &ack_msg, pdMS_TO_TICKS(100))) {
-                if (ack_msg.acknowledged) {
-                    acknowledged = true;
-                    ESP_LOGI(TAG, "✅ Evento %d confirmado (msg_id: %d)", i + 1, ack_msg.msg_id);
-                }
+        if (ret == ESP_OK) {
+            strcat(json_array, json_buffer);
+            if (i < event_count - 1) {
+                strcat(json_array, ",");
             }
-            wait_time += 100;
         }
-        
-        if (!acknowledged) {
-            ESP_LOGW(TAG, "⚠️ Timeout esperando confirmación para evento %d", i + 1);
-        }
-        
-        // Pequeña pausa entre envíos para no saturar
-        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    
+    strcat(json_array, "]");
+    
+    // Enviar array completo en una sola publicación
+    ret = mqtt_lib_publish(MQTT_EVENTS_TOPIC, json_array, strlen(json_array), 1);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "📤 Array con %d eventos enviado exitosamente", event_count);
+    } else {
+        ESP_LOGE(TAG, "❌ Error enviando array de eventos: %s", esp_err_to_name(ret));
     }
     
     // Liberar memoria
-    if (events) {
-        free(events);
-    }
+    free(events);
+    free(json_array);
     
-    ESP_LOGI(TAG, "🎉 Sincronización de eventos completada");
-    
-    // Limpiar cola y tarea
-    if (pending_messages_queue) {
-        vQueueDelete(pending_messages_queue);
-        pending_messages_queue = NULL;
-    }
-    
+    ESP_LOGI(TAG, "🎉 Sincronización completada");
     sync_task_handle = NULL;
     vTaskDelete(NULL);
 }
@@ -268,9 +221,31 @@ void my_callback(const char *topic, const char *data, int len)
             ESP_LOGI(TAG, "✅ Evento PREVIOUS enviado correctamente");
         }
     }
+    else if (strcmp(command, "volumeup") == 0) {
+        ESP_LOGI(TAG, "🔊 Comando: VOLUME UP - Enviando evento");
+        esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_VOLUME_UP);
+        
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Error al enviar evento VOLUME UP: %s", esp_err_to_name(ret));
+            led_set_state(LED_STATE_ERROR);
+        } else {
+            ESP_LOGI(TAG, "✅ Evento VOLUME UP enviado correctamente");
+        }
+    }
+    else if (strcmp(command, "volumedown") == 0) {
+        ESP_LOGI(TAG, "🔉 Comando: VOLUME DOWN - Enviando evento");
+        esp_err_t ret = audio_controller_send_event(AUDIO_EVENT_VOLUME_DOWN);
+        
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Error al enviar evento VOLUME DOWN: %s", esp_err_to_name(ret));
+            led_set_state(LED_STATE_ERROR);
+        } else {
+            ESP_LOGI(TAG, "✅ Evento VOLUME DOWN enviado correctamente");
+        }
+    }
     else {
         ESP_LOGW(TAG, "⚠️ Comando desconocido: %s", command);
-        ESP_LOGI(TAG, "📋 Comandos válidos: play, pause, next, previous");
+        ESP_LOGI(TAG, "📋 Comandos válidos: play, pause, next, previous, volumeup, volumedown");
         
         // LED de error por comando desconocido
         led_set_state(LED_STATE_ERROR);
@@ -298,9 +273,8 @@ esp_err_t init_mqtt_with_config(void)
         return ret;
     }
     
-    // Configurar callbacks para conexión y confirmación de mensajes
+    // Configurar callback para conexión
     ESP_ERROR_CHECK(mqtt_lib_set_connected_callback(mqtt_connected_callback));
-    ESP_ERROR_CHECK(mqtt_lib_set_published_callback(mqtt_published_callback));
     
     return ESP_OK;
 }

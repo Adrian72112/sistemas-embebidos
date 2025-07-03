@@ -194,12 +194,14 @@ uint32_t logger_get_event_count(void)
 const char* logger_event_type_to_string(logger_event_type_t event_type)
 {
     switch (event_type) {
-        case LOGGER_EVENT_PLAY:     return "PLAY";
-        case LOGGER_EVENT_PAUSE:    return "PAUSE";
-        case LOGGER_EVENT_NEXT:     return "NEXT";
-        case LOGGER_EVENT_PREVIOUS: return "PREVIOUS";
-        case LOGGER_EVENT_STOP:     return "STOP";
-        default:                    return "UNKNOWN";
+        case LOGGER_EVENT_PLAY:         return "PLAY";
+        case LOGGER_EVENT_PAUSE:        return "PAUSE";
+        case LOGGER_EVENT_NEXT:         return "NEXT";
+        case LOGGER_EVENT_PREVIOUS:     return "PREVIOUS";
+        case LOGGER_EVENT_VOLUME_UP:    return "VOLUME_UP";
+        case LOGGER_EVENT_VOLUME_DOWN:  return "VOLUME_DOWN";
+        case LOGGER_EVENT_STOP:         return "STOP";
+        default:                        return "UNKNOWN";
     }
 }
 

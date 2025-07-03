@@ -10,6 +10,8 @@ typedef enum {
     AUDIO_EVENT_PAUSE,      /*!< Evento de pausa */
     AUDIO_EVENT_NEXT,       /*!< Evento de siguiente pista */
     AUDIO_EVENT_PREVIOUS,   /*!< Evento de pista anterior */
+    AUDIO_EVENT_VOLUME_UP,  /*!< Evento de subir volumen */
+    AUDIO_EVENT_VOLUME_DOWN,/*!< Evento de bajar volumen */
     AUDIO_EVENT_STOP,       /*!< Evento de detener */
     AUDIO_EVENT_MAX         /*!< Marcador de eventos máximos */
 } audio_event_type_t;
