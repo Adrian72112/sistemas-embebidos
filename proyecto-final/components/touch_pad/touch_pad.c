@@ -7,21 +7,17 @@
 #include "led.h"
 #include "esp_timer.h"
 #include "audio_controller.h"
-#define TOUCH_BUTTON_NUM    2
+#define TOUCH_BUTTON_NUM    4
 #define TOUCH_THRESHOLD     60000  // ajustar según calibración
 static const char *TAG = "touch read";
 
 static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
-    //TOUCH_PAD_NUM1, // VOL_UP
+    TOUCH_PAD_NUM1, // VOL_UP
     TOUCH_PAD_NUM2, // PLAY/PAUSE
-    //TOUCH_PAD_NUM3, // VOL_DOWN
+    TOUCH_PAD_NUM3, // VOL_DOWN
     TOUCH_PAD_NUM5, // RECORD
-    //TOUCH_PAD_NUM6, // PHOTO
-    //TOUCH_PAD_NUM11 // NETWORK
+   
 };
-
-// Estado global del LED
-static led_strip_t *s_strip = NULL;
 
 // Debounce muy básico (evitamos así lecturas repetidas)
 static uint32_t last_time[TOUCH_BUTTON_NUM] = {0};
@@ -58,27 +54,24 @@ void tp_read(void *pvParameters)
                 last_time[i] = now;
                 esp_err_t ret;
                 switch (button[i]) {
-                    /*case TOUCH_PAD_NUM1:  // VOL_UP
-                        s_brightness = (s_brightness + 20 > 255) ? 255 : s_brightness + 20;
-                        ESP_LOGI(TAG, "VOL_UP: brillo=%d", s_brightness);
-                        led_set_color(s_strip,
-                            (s_color_r * s_brightness) / 255,
-                            (s_color_g * s_brightness) / 255,
-                            (s_color_b * s_brightness) / 255
-                        );
-                        break;*/
+                    case TOUCH_PAD_NUM1:  // VOL_UP/NEXT
+                        ESP_LOGI(TAG, "▶ TOUCH NEXT: enviando evento NEXT");
+                        ret = audio_controller_send_event(AUDIO_EVENT_NEXT);
+                        if (ret != ESP_OK) {
+                            ESP_LOGE(TAG, "Error al enviar evento NEXT desde touch: %s", esp_err_to_name(ret));
+                        } 
+                        break;
 
-                    /*case TOUCH_PAD_NUM3:  // VOL_DOWN
-                        s_brightness = (s_brightness < 20) ? 0 : s_brightness - 20;
-                        ESP_LOGI(TAG, "VOL_DOWN: brillo=%d", s_brightness);
-                        led_set_color(s_strip,
-                            (s_color_r * s_brightness) / 255,
-                            (s_color_g * s_brightness) / 255,
-                            (s_color_b * s_brightness) / 255
-                        );
-                        break;*/
+                    case TOUCH_PAD_NUM3:  // VOL_DOWN/PREVIOUS
+                        ESP_LOGI(TAG, "▶ TOUCH PREVIOUS: enviando evento PREVIOUS");
+                        ret = audio_controller_send_event(AUDIO_EVENT_PREVIOUS);
+                        if (ret != ESP_OK) {
+                            ESP_LOGE(TAG, "Error al enviar evento PREVIOUS desde touch: %s", esp_err_to_name(ret));
+                        } 
+                        break;
+                      
 
-                    case TOUCH_PAD_NUM2:  // PLAY/PAUSE
+                    case TOUCH_PAD_NUM2:  // PLAY
                         ESP_LOGI(TAG, "▶ TOUCH PLAY: enviando evento PLAY");
                         ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
                         if (ret != ESP_OK) {
@@ -86,8 +79,8 @@ void tp_read(void *pvParameters)
                         } 
                         break;
 
-                    case TOUCH_PAD_NUM5:  // RECORD -> rojo
-                        ESP_LOGI(TAG, "TOUCH STOP: enviando evento STOP");
+                    case TOUCH_PAD_NUM5:  // RECORD/PAUSE
+                        ESP_LOGI(TAG, "TOUCH STOP: enviando evento PAUSE");
                         ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
                         if (ret != ESP_OK) {
                             ESP_LOGE(TAG, "Error al enviar evento PAUSE desde touch: %s", esp_err_to_name(ret));
@@ -95,12 +88,7 @@ void tp_read(void *pvParameters)
                         break;
 
 
-                    /*case TOUCH_PAD_NUM11: // NETWORK -> azul
-                        ESP_LOGI(TAG, "NETWORK: color=Azul");
-                        led_set_color(s_strip,
-                            0, 0, (255 * s_brightness) / 255
-                        );
-                        break;*/
+                   
 
                     default:
                         break;
