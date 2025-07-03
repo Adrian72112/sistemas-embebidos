@@ -14,7 +14,7 @@
 #include "led_strip.h"
 #include "led.h"
 #include "ntp_sync.h"
-
+#include "touch_pad.h"
 #define BROKER_URI "mqtt://broker.hivemq.com"
 #define MQTT_EVENTS_TOPIC "/esp32/audio/events"
 
@@ -378,8 +378,11 @@ void app_main(void)
         led_set_state(LED_STATE_OFF);
         ESP_LOGI(TAG, "🎉 Sistema completamente inicializado!");
     }
+
+    configure_touch_pad();
+    tp_set_led_strip(strip); 
+    xTaskCreate(tp_read, "tp_read_task", 4096, NULL, 5, NULL);
     
-    // Mantener el programa funcionando
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));  // Delay de 1 segundo
     }

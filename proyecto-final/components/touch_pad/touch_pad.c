@@ -6,18 +6,18 @@
 #include "freertos/FreeRTOS.h"
 #include "led.h"
 #include "esp_timer.h"
-
-#define TOUCH_BUTTON_NUM    6
+#include "audio_controller.h"
+#define TOUCH_BUTTON_NUM    2
 #define TOUCH_THRESHOLD     60000  // ajustar según calibración
 static const char *TAG = "touch read";
 
 static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
-    TOUCH_PAD_NUM1, // VOL_UP
+    //TOUCH_PAD_NUM1, // VOL_UP
     TOUCH_PAD_NUM2, // PLAY/PAUSE
-    TOUCH_PAD_NUM3, // VOL_DOWN
+    //TOUCH_PAD_NUM3, // VOL_DOWN
     TOUCH_PAD_NUM5, // RECORD
-    TOUCH_PAD_NUM6, // PHOTO
-    TOUCH_PAD_NUM11 // NETWORK
+    //TOUCH_PAD_NUM6, // PHOTO
+    //TOUCH_PAD_NUM11 // NETWORK
 };
 
 // Estado global del LED
@@ -36,7 +36,7 @@ void tp_set_led_strip(led_strip_t *strip) {
     s_strip = strip;
 }
 
-void tp_read(void)
+void tp_read(void *pvParameters)
 {
     if (!s_strip) {
         ESP_LOGE(TAG, "tp_set_led_strip() NO fue llamado antes de tp_read()");
@@ -60,9 +60,9 @@ void tp_read(void)
                 now - last_time[i] > DEBOUNCE_MS)
             {
                 last_time[i] = now;
-
+                esp_err_t ret;
                 switch (button[i]) {
-                    case TOUCH_PAD_NUM1:  // VOL_UP
+                    /*case TOUCH_PAD_NUM1:  // VOL_UP
                         s_brightness = (s_brightness + 20 > 255) ? 255 : s_brightness + 20;
                         ESP_LOGI(TAG, "VOL_UP: brillo=%d", s_brightness);
                         led_set_color(s_strip,
@@ -70,9 +70,9 @@ void tp_read(void)
                             (s_color_g * s_brightness) / 255,
                             (s_color_b * s_brightness) / 255
                         );
-                        break;
+                        break;*/
 
-                    case TOUCH_PAD_NUM3:  // VOL_DOWN
+                    /*case TOUCH_PAD_NUM3:  // VOL_DOWN
                         s_brightness = (s_brightness < 20) ? 0 : s_brightness - 20;
                         ESP_LOGI(TAG, "VOL_DOWN: brillo=%d", s_brightness);
                         led_set_color(s_strip,
@@ -80,45 +80,32 @@ void tp_read(void)
                             (s_color_g * s_brightness) / 255,
                             (s_color_b * s_brightness) / 255
                         );
-                        break;
+                        break;*/
 
                     case TOUCH_PAD_NUM2:  // PLAY/PAUSE
-                        ESP_LOGI(TAG, "PLAY/PAUSE: parpadeo");
-                        for (int j = 0; j < 2; j++) {
-                            led_off(s_strip);
-                            vTaskDelay(200);
-                            led_set_color(s_strip,
-                                (s_color_r * s_brightness) / 255,
-                                (s_color_g * s_brightness) / 255,
-                                (s_color_b * s_brightness) / 255
-                            );
-                            vTaskDelay(200);
-                        }
+                        ESP_LOGI(TAG, "▶ TOUCH PLAY: enviando evento PLAY");
+                        ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
+                        if (ret != ESP_OK) {
+                            ESP_LOGE(TAG, "Error al enviar evento PLAY desde touch: %s", esp_err_to_name(ret));
+                        } 
                         break;
 
                     case TOUCH_PAD_NUM5:  // RECORD -> rojo
-                        ESP_LOGI(TAG, "RECORD: color=Rojo");
-                        s_color_r = 255; s_color_g = 0; s_color_b = 0;
-                        led_set_color(s_strip,
-                            (255 * s_brightness) / 255, 0, 0
-                        );
+                        ESP_LOGI(TAG, "TOUCH STOP: enviando evento STOP");
+                        ret = audio_controller_send_event(AUDIO_EVENT_STOP);
+                        if (ret != ESP_OK) {
+                            ESP_LOGE(TAG, "Error al enviar evento STOP desde touch: %s", esp_err_to_name(ret));
+                        }
                         break;
 
-                    case TOUCH_PAD_NUM6:  // PHOTO -> verde
-                        ESP_LOGI(TAG, "PHOTO: color=Verde");
-                        s_color_r = 0; s_color_g = 255; s_color_b = 0;
-                        led_set_color(s_strip,
-                            0, (255 * s_brightness) / 255, 0
-                        );
-                        break;
 
-                    case TOUCH_PAD_NUM11: // NETWORK -> azul
+                    /*case TOUCH_PAD_NUM11: // NETWORK -> azul
                         ESP_LOGI(TAG, "NETWORK: color=Azul");
                         s_color_r = 0; s_color_g = 0; s_color_b = 255;
                         led_set_color(s_strip,
                             0, 0, (255 * s_brightness) / 255
                         );
-                        break;
+                        break;*/
 
                     default:
                         break;
@@ -131,7 +118,7 @@ void tp_read(void)
 
 void configure_touch_pad(void)
 {
-     /* Initialize touch pad peripheral. */
+    /* Initialize touch pad peripheral. */
     touch_pad_init();
     for (int i = 0; i < TOUCH_BUTTON_NUM; i++) {
         touch_pad_config(button[i]);
@@ -159,14 +146,4 @@ void configure_touch_pad(void)
     /* Enable touch sensor clock. Work mode is "timer trigger". */
     touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
     touch_pad_fsm_start();
-
-    //Inicializamos también las luces
-    // 1) Inicializa tu LED
-    led_strip_t *strip = NULL;
-    ESP_ERROR_CHECK( led_init(&strip) );
-    // Ponlo inicialmente apagado
-    led_off(strip);
-
-    // 3) Enlaza el strip al lector de botones
-    tp_set_led_strip(strip);
 }

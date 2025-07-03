@@ -1,3 +1,4 @@
+#include "led_strip.h"
 /**
  * @brief Inicializa y configura el módulo de Touch Pad.
  *
@@ -20,4 +21,5 @@ void configure_touch_pad(void);
  *
  * @warning Función bloqueante que itera sin fin.
  */
-void tp_read(void);
+void tp_read(void *pvParameters);
+void tp_set_led_strip(led_strip_t *strip);
