@@ -9,6 +9,7 @@ static mqtt_connected_callback_t connected_callback = NULL;
 static mqtt_published_callback_t published_callback = NULL;
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 static bool is_connected = false;
+static char subscription_topic[64] = "/topic/qos1"; // Topic por defecto
 
 static void mqtt_event_handler(void *args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
@@ -19,7 +20,8 @@ static void mqtt_event_handler(void *args, esp_event_base_t base, int32_t event_
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "Connected to MQTT broker");
             is_connected = true;
-            esp_mqtt_client_subscribe(client, "/topic/qos1", 1);
+            esp_mqtt_client_subscribe(client, subscription_topic, 1);
+            ESP_LOGI(TAG, "Subscribed to topic: %s", subscription_topic);
             
             // Llamar callback de conexión establecida si está configurado
             if (connected_callback) {
@@ -92,6 +94,21 @@ esp_err_t mqtt_lib_set_connected_callback(mqtt_connected_callback_t callback)
 esp_err_t mqtt_lib_set_published_callback(mqtt_published_callback_t callback)
 {
     published_callback = callback;
+    return ESP_OK;
+}
+
+esp_err_t mqtt_lib_set_subscription_topic(const char *topic)
+{
+    if (!topic) {
+        ESP_LOGE(TAG, "Subscription topic cannot be NULL");
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // Copiar el topic a la variable global
+    strncpy(subscription_topic, topic, sizeof(subscription_topic) - 1);
+    subscription_topic[sizeof(subscription_topic) - 1] = '\0';
+    
+    ESP_LOGI(TAG, "🔧 MQTT subscription topic configurado: %s", subscription_topic);
     return ESP_OK;
 }
 

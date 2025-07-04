@@ -264,9 +264,16 @@ esp_err_t init_mqtt_with_config(void)
         strcpy(current_mqtt_topic, mqtt_config.topic);
     } else {
         ESP_LOGI(TAG, "📋 Usando configuración MQTT por defecto: %s", current_broker_uri);
+        // Mantener el topic por defecto ya definido en current_mqtt_topic
     }
     
     // Inicializar MQTT con la configuración cargada
+    ret = mqtt_lib_set_subscription_topic(current_mqtt_topic);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "❌ Error configurando topic de suscripción: %s", esp_err_to_name(ret));
+        return ret;
+    }
+    
     ret = mqtt_lib_init(current_broker_uri, my_callback);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "❌ Error inicializando MQTT: %s", esp_err_to_name(ret));
@@ -275,6 +282,9 @@ esp_err_t init_mqtt_with_config(void)
     
     // Configurar callback para conexión
     ESP_ERROR_CHECK(mqtt_lib_set_connected_callback(mqtt_connected_callback));
+    
+    // Configurar el topic MQTT en el web_server
+    ESP_ERROR_CHECK(web_server_set_mqtt_topic(current_mqtt_topic));
     
     return ESP_OK;
 }
@@ -315,6 +325,9 @@ void app_main(void)
         ESP_LOGE(TAG, "❌ Error iniciando servidor web: %s", esp_err_to_name(ret));
         led_set_state(LED_STATE_ERROR);
         // Continuar sin servidor web
+    } else {
+        // Configurar topic MQTT por defecto en el web_server
+        web_server_set_mqtt_topic(current_mqtt_topic);
     }
     
     // Verificar si tenemos configuración WiFi para intentar MQTT

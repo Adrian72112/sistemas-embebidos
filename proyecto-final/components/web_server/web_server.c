@@ -11,6 +11,7 @@
 
 static const char *TAG = "web_server";
 static httpd_handle_t server = NULL;
+static char current_mqtt_topic[64] = "/topic/qos1"; // Topic MQTT por defecto
 
 // Referencias a archivos web embebidos
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
@@ -294,9 +295,9 @@ static esp_err_t comando_handler(httpd_req_t *req)
             
             // Publicar comando por MQTT si está conectado
             if (mqtt_lib_is_connected()) {
-                esp_err_t ret = mqtt_lib_publish("/topic/qos1", cmd, strlen(cmd), 1);
+                esp_err_t ret = mqtt_lib_publish(current_mqtt_topic, cmd, strlen(cmd), 1);
                 if (ret == ESP_OK) {
-                    ESP_LOGI(TAG, "📤 Comando enviado por MQTT: %s", cmd);
+                    ESP_LOGI(TAG, "📤 Comando enviado por MQTT: %s (topic: %s)", cmd, current_mqtt_topic);
                 } else {
                     ESP_LOGE(TAG, "❌ Error enviando comando por MQTT: %s", esp_err_to_name(ret));
                 }
@@ -466,4 +467,19 @@ esp_err_t web_server_stop(void)
 bool web_server_is_running(void)
 {
     return server != NULL;
+}
+
+esp_err_t web_server_set_mqtt_topic(const char* topic)
+{
+    if (!topic) {
+        ESP_LOGE(TAG, "Topic cannot be NULL");
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // Copiar el topic a la variable global
+    strncpy(current_mqtt_topic, topic, sizeof(current_mqtt_topic) - 1);
+    current_mqtt_topic[sizeof(current_mqtt_topic) - 1] = '\0';
+    
+    ESP_LOGI(TAG, "🔧 MQTT topic configurado: %s", current_mqtt_topic);
+    return ESP_OK;
 }
