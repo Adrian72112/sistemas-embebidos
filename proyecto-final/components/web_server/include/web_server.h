@@ -28,3 +28,11 @@ esp_err_t web_server_stop(void);
  * @return true si el servidor está activo, false en caso contrario
  */
 bool web_server_is_running(void);
+
+/**
+ * @brief Configura el topic MQTT a usar por el servidor web
+ * 
+ * @param topic Topic MQTT para enviar comandos
+ * @return ESP_OK si se configura correctamente
+ */
+esp_err_t web_server_set_mqtt_topic(const char* topic);

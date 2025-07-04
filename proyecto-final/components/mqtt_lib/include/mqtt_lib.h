@@ -21,3 +21,6 @@ esp_err_t mqtt_lib_publish(const char *topic, const char *data, int len, int qos
 
 // Obtiene el estado de conexión MQTT
 bool mqtt_lib_is_connected(void);
+
+// Configura el topic de suscripción MQTT (debe llamarse antes de mqtt_lib_init)
+esp_err_t mqtt_lib_set_subscription_topic(const char *topic);
