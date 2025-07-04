@@ -16,6 +16,7 @@ static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
     TOUCH_PAD_NUM2, // PLAY/PAUSE
     TOUCH_PAD_NUM3, // VOL_DOWN
     TOUCH_PAD_NUM5, // RECORD
+    
    
 };
 
@@ -45,19 +46,19 @@ void tp_read(void *pvParameters)
                 last_time[i] = now;
                 esp_err_t ret;
                 switch (button[i]) {
-                    case TOUCH_PAD_NUM1:  // VOL_UP/NEXT
-                        ESP_LOGI(TAG, "▶ TOUCH NEXT: enviando evento NEXT");
-                        ret = audio_controller_send_event(AUDIO_EVENT_NEXT);
+                    case TOUCH_PAD_NUM1:  // VOL_UP
+                        ESP_LOGI(TAG, "▶ TOUCH VOL_UP: enviando evento VOL_UP");
+                        ret = audio_controller_send_event(AUDIO_EVENT_VOLUME_UP);
                         if (ret != ESP_OK) {
-                            ESP_LOGE(TAG, "Error al enviar evento NEXT desde touch: %s", esp_err_to_name(ret));
+                            ESP_LOGE(TAG, "Error al enviar evento VOL_UP desde touch: %s", esp_err_to_name(ret));
                         } 
                         break;
 
-                    case TOUCH_PAD_NUM3:  // VOL_DOWN/PREVIOUS
-                        ESP_LOGI(TAG, "▶ TOUCH PREVIOUS: enviando evento PREVIOUS");
-                        ret = audio_controller_send_event(AUDIO_EVENT_PREVIOUS);
+                    case TOUCH_PAD_NUM3:  // VOL_DOWN
+                        ESP_LOGI(TAG, "▶ TOUCH VOL_DOWN: enviando evento VOL_DOWN");
+                        ret = audio_controller_send_event(AUDIO_EVENT_VOLUME_DOWN);
                         if (ret != ESP_OK) {
-                            ESP_LOGE(TAG, "Error al enviar evento PREVIOUS desde touch: %s", esp_err_to_name(ret));
+                            ESP_LOGE(TAG, "Error al enviar evento VOL_DOWN desde touch: %s", esp_err_to_name(ret));
                         } 
                         break;
                       
