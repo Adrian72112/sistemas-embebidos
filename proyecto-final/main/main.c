@@ -289,8 +289,7 @@ esp_err_t init_mqtt_with_config(void)
     return ESP_OK;
 }
 
-void app_main(void)
-{
+void app_main(void) {
     printf("ESP32-S2 Kaluga Kit - Audio Player con Control MQTT\n");
     printf("=====================================================\n");
     
@@ -399,24 +398,11 @@ void app_main(void)
             // Continuar sin logger si falla
         }
 
-        configure_touch_pad();
-        tp_set_led_strip(strip); 
-        xTaskCreate(tp_read, "tp_read_task", 4096, NULL, 5, NULL);
-        
-        ESP_LOGI(TAG, "✅ Sistema completo iniciado!");
-        ESP_LOGI(TAG, "📋 Comandos disponibles: play, pause, next, previous");
-        ESP_LOGI(TAG, "🌐 Control web disponible en http://[IP_LOCAL]/");
-        
-    } else {
-        ESP_LOGI(TAG, "⚙️ Modo configuración - WiFi no configurado");
-        ESP_LOGI(TAG, "🌐 Conecta a la red 'ESP32-Config' (password: config123)");
-        ESP_LOGI(TAG, "🔧 Accede a http://192.168.4.1/ para configurar WiFi y MQTT");
-        led_set_state(LED_STATE_PAUSE); // LED apagado en modo configuración
-    }
-    
-    ESP_LOGI(TAG, "🚀 Sistema listo!");
+    configure_touch_pad();
+    xTaskCreate(tp_read, "tp_read_task", 4096, NULL, 5, NULL);
     
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+}
 }
