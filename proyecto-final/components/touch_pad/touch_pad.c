@@ -7,17 +7,16 @@
 #include "led.h"
 #include "esp_timer.h"
 #include "audio_controller.h"
-#define TOUCH_BUTTON_NUM    4
+#define TOUCH_BUTTON_NUM    5
 #define TOUCH_THRESHOLD     60000  // ajustar según calibración
 static const char *TAG = "touch read";
-
+static bool is_playing = false;
 static const touch_pad_t button[TOUCH_BUTTON_NUM] = {
     TOUCH_PAD_NUM1, // VOL_UP
     TOUCH_PAD_NUM2, // PLAY/PAUSE
     TOUCH_PAD_NUM3, // VOL_DOWN
-    TOUCH_PAD_NUM5, // RECORD
-    
-   
+    TOUCH_PAD_NUM5, // PREVIOUS
+    TOUCH_PAD_NUM11, // NEXT 
 };
 
 // Debounce muy básico (evitamos así lecturas repetidas)
@@ -63,25 +62,40 @@ void tp_read(void *pvParameters)
                         break;
                       
 
-                    case TOUCH_PAD_NUM2:  // PLAY
-                        ESP_LOGI(TAG, "▶ TOUCH PLAY: enviando evento PLAY");
-                        ret = audio_controller_send_event(AUDIO_EVENT_PLAY); 
-                        led_set_state(LED_STATE_PLAY); 
+                    case TOUCH_PAD_NUM2:  // PLAY/PAUSE
+                        if (is_playing) {
+                            ESP_LOGI(TAG, "⏸️ TOUCH PAUSE: enviando evento PAUSE");
+                            ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
+                            led_set_state(LED_STATE_PAUSE);
+                            is_playing = false;
+                        } else {
+                            ESP_LOGI(TAG, "▶️ TOUCH PLAY: enviando evento PLAY");
+                            ret = audio_controller_send_event(AUDIO_EVENT_PLAY);
+                            led_set_state(LED_STATE_PLAY);
+                            is_playing = true;
+                        }
                         if (ret != ESP_OK) {
-                            ESP_LOGE(TAG, "Error al enviar evento PLAY desde touch: %s", esp_err_to_name(ret));
-                        } 
-                        break;
-
-                    case TOUCH_PAD_NUM5:  // RECORD/PAUSE
-                        ESP_LOGI(TAG, "TOUCH STOP: enviando evento PAUSE");
-                        ret = audio_controller_send_event(AUDIO_EVENT_PAUSE);
-                        led_set_state(LED_STATE_PAUSE); 
-                        if (ret != ESP_OK) {
-                            ESP_LOGE(TAG, "Error al enviar evento PAUSE desde touch: %s", esp_err_to_name(ret));
+                            ESP_LOGE(TAG, "Error al enviar evento PLAY/PAUSE desde touch: %s", esp_err_to_name(ret));
                         }
                         break;
 
+                    case TOUCH_PAD_NUM5:  // RECORD/PREVIOUS/
+                        ESP_LOGI(TAG, "TOUCH PREVIOUS: enviando evento PREVIOUS");
+                        ret = audio_controller_send_event(AUDIO_EVENT_PREVIOUS);
+                        led_set_state(LED_STATE_PREVIOUS); 
+                        if (ret != ESP_OK) {
+                            ESP_LOGE(TAG, "Error al enviar evento PREVIOUS desde touch: %s", esp_err_to_name(ret));
+                        }
+                        break;
 
+                    case TOUCH_PAD_NUM11:  // NEXT
+                        ESP_LOGI(TAG, "TOUCH NEXT: enviando evento NEXT");
+                        ret = audio_controller_send_event(AUDIO_EVENT_NEXT);
+                        led_set_state(LED_STATE_NEXT);
+                        if (ret != ESP_OK) {
+                            ESP_LOGE(TAG, "Error al enviar evento NEXT desde touch: %s", esp_err_to_name(ret));
+                        }
+                        break;
                    
 
                     default:
