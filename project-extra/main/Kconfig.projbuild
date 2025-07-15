@@ -4,10 +4,8 @@ menu "Example Configuration"
         string "Broker URL"
         default "mqtt://mqtt.eclipseprojects.io"
         help
-            URL of the broker to connect to
-
-    config BROKER_URL_FROM_STDIN
-        bool
-        default y if BROKER_URL = "FROM_STDIN"
+            URL del broker MQTT que se usará como valor inicial en mqtt_uri.
+            Este valor se puede sobreescribir luego con el comando !broker por consola.
 
 endmenu
+

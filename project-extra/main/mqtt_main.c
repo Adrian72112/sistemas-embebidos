@@ -20,6 +20,7 @@
 #include "esp_netif.h"
 #include "esp_log.h"
 #include "esp_err.h"
+#include "freertos/event_groups.h"
 
 // Cliente MQTT global (lo usaremos en distintas tareas)
 esp_mqtt_client_handle_t client = NULL;
@@ -30,8 +31,10 @@ static const char *TAG = "mqtt_main";
 // Variables globales para configuración dinámica
 char wifi_ssid[32] = "MiRedPorDefecto";
 char wifi_pass[64] = "MiClavePorDefecto";
-char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
+char mqtt_uri[128] =  CONFIG_BROKER_URL;
 char mqtt_topic[64] = "kaluga/test";
+wifi_event_group = xEventGroupCreate();
+
 
 //connección WiFi y MQTT dinámica
 void connect_wifi(void) {
@@ -309,7 +312,7 @@ static void mqtt5_app_start(void)
     };
 
     esp_mqtt_client_config_t mqtt5_cfg = {
-        .broker.address.uri = CONFIG_BROKER_URL,
+        .broker.address.uri = mqtt_uri,
         .session.protocol_ver = MQTT_PROTOCOL_V_5,
         .network.disable_auto_reconnect = true,
         .credentials.username = "123",
@@ -321,29 +324,7 @@ static void mqtt5_app_start(void)
         .session.last_will.retain = true,
     };
 
-#if CONFIG_BROKER_URL_FROM_STDIN
-    char line[128];
 
-    if (strcmp(mqtt5_cfg.uri, "FROM_STDIN") == 0) {
-        int count = 0;
-        printf("Please enter url of mqtt broker\n");
-        while (count < 128) {
-            int c = fgetc(stdin);
-            if (c == '\n') {
-                line[count] = '\0';
-                break;
-            } else if (c > 0 && c < 127) {
-                line[count] = c;
-                ++count;
-            }
-            vTaskDelay(10 / portTICK_PERIOD_MS);
-        }
-        mqtt5_cfg.broker.address.uri = line;
-        printf("Broker url: %s\n", line);
-    } else {
-        ESP_LOGE(TAG, "Configuration mismatch: wrong broker url");
-        abort();
-    }
 #endif /* CONFIG_BROKER_URL_FROM_STDIN */
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt5_cfg);
@@ -395,7 +376,5 @@ void mqtt_main(void)
 
     // 🧵 Arranca la tarea que escucha comandos por consola (!wifi, !broker, etc.)
     xTaskCreate(&command_task, "command_task", 4096, NULL, 5, NULL);
-
-    connect_wifi();
 
 }
