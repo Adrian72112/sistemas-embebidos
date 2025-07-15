@@ -6,7 +6,11 @@ dependencies:
   protocol_examples_common:
     dependencies: []
     source:
+<<<<<<< Updated upstream
       path: C:\Users\Sofia\esp\v5.4.1\esp-idf\examples\common_components\protocol_examples_common
+=======
+      path: C:\Users\Public\esp\v5.4.1\esp-idf\examples\common_components\protocol_examples_common
+>>>>>>> Stashed changes
       type: local
     version: '*'
 direct_dependencies:
