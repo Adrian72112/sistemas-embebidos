@@ -16,7 +16,7 @@
 #include "esp_log.h"
 #include "mqtt_client.h"
 
-// 📌 Variables globales para configuración dinámica
+// Variables globales para configuración dinámica
 char wifi_ssid[32] = "MiRedPorDefecto";
 char wifi_pass[64] = "MiClavePorDefecto";
 char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
@@ -26,7 +26,36 @@ char mqtt_topic[64] = "kaluga/test";
 esp_mqtt_client_handle_t client = NULL;
 
 
-static const char *TAG = "mqtt5_example";
+// 🔎 TAG para los logs
+static const char *TAG = "mqtt_main";
+
+//Funcion que interpreta los comandos escritos por consola
+void nombre_de_tarea(void *pvParameters) {
+    while (1) {
+        // Lo que querés que haga la tarea
+        printf("Estoy ejecutando la tarea...\n");
+
+        // Esperar un rato (sin bloquear todo el sistema)
+        vTaskDelay(pdMS_TO_TICKS(1000)); // 1000 ms = 1 segundo
+    }
+
+    // Esto no se suele alcanzar, pero por las dudas
+    vTaskDelete(NULL);
+}
+
+// 🧵 Tarea que lee comandos desde la consola serial
+void command_task(void *pvParameters) {
+    char line[128];
+    while (1) {
+        if (fgets(line, sizeof(line), stdin)) {
+            // Borra el salto de línea final (\n o \r)
+            line[strcspn(line, "\r\n")] = 0;
+            parse_command(line);
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));  // Espera un poco
+    }
+    vTaskDelete(NULL);
+}
 
 static void log_error_if_nonzero(const char *message, int error_code)
 {
