@@ -28,20 +28,22 @@ esp_mqtt_client_handle_t client = NULL;
 
 // 🔎 TAG para los logs
 static const char *TAG = "mqtt_main";
-
-//Funcion que interpreta los comandos escritos por consola
-void nombre_de_tarea(void *pvParameters) {
-    while (1) {
-        // Lo que querés que haga la tarea
-        printf("Estoy ejecutando la tarea...\n");
-
-        // Esperar un rato (sin bloquear todo el sistema)
-        vTaskDelay(pdMS_TO_TICKS(1000)); // 1000 ms = 1 segundo
+//guarda en las variables globales los datos de WiFi y MQTT
+void parse_command(char *line) {
+    if (strncmp(line, "!wifi ", 6) == 0) {
+        sscanf(line + 6, "%s %s", wifi_ssid, wifi_pass);
+        printf("✅ WiFi actualizado: SSID=%s, PASS=%s\n", wifi_ssid, wifi_pass);
+    } else if (strncmp(line, "!broker ", 8) == 0) {
+        sscanf(line + 8, "%s", mqtt_uri);
+        printf("✅ Broker actualizado: %s\n", mqtt_uri);
+    } else if (strncmp(line, "!topic ", 7) == 0) {
+        sscanf(line + 7, "%s", mqtt_topic);
+        printf("✅ Tópico actualizado: %s\n", mqtt_topic);
+    } else {
+        printf("❌ Comando desconocido: %s\n", line);
     }
-
-    // Esto no se suele alcanzar, pero por las dudas
-    vTaskDelete(NULL);
 }
+
 
 // 🧵 Tarea que lee comandos desde la consola serial
 void command_task(void *pvParameters) {
@@ -302,11 +304,11 @@ static void mqtt5_app_start(void)
 
 void mqtt_main(void)
 {
-
     ESP_LOGI(TAG, "[APP] Startup..");
     ESP_LOGI(TAG, "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
     ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
+    // Logs detallados (útil para debug)
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("mqtt_client", ESP_LOG_VERBOSE);
     esp_log_level_set("mqtt_example", ESP_LOG_VERBOSE);
@@ -315,18 +317,7 @@ void mqtt_main(void)
     esp_log_level_set("transport", ESP_LOG_VERBOSE);
     esp_log_level_set("outbox", ESP_LOG_VERBOSE);
 
-    ESP_ERROR_CHECK(nvs_flash_init());
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-     * Read "Establishing Wi-Fi or Ethernet Connection" section in
-     * examples/protocols/README.md for more information about this function.
-     */
-    ESP_ERROR_CHECK(example_connect());
-
-    mqtt5_app_start();
-     // Inicializa NVS (memoria para guardar datos)
+    // 🔧 Inicialización de NVS, red y eventos
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -334,13 +325,14 @@ void mqtt_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    // Inicializa red y eventos (necesario antes de usar WiFi o MQTT)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    // ✨ Acá arrancamos la tarea que lee comandos por consola
+    // 🚫 NO usamos example_connect() porque queremos conexión WiFi dinámica
+    // ESP_ERROR_CHECK(example_connect());
+
+    // 🧵 Arranca la tarea que escucha comandos por consola (!wifi, !broker, etc.)
     xTaskCreate(&command_task, "command_task", 4096, NULL, 5, NULL);
 
-    // En este punto todavía no nos conectamos a WiFi ni MQTT
-    // Lo haremos después, cuando vos decidas activar con los comandos
+    // ⚠️ Aún no conectamos a WiFi ni MQTT: eso será parte de los próximos pasos
 }
