@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/CMakeFiles/bootloader
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/CMakeFiles/bootloader.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/CMakeFiles/bootloader-complete.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/project-extra-final/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
