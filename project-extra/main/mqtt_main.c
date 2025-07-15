@@ -4,7 +4,7 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "esp_event.h"
-#include "esp_event_loop.h"
+#include "esp_event.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "nvs_flash.h"
@@ -47,7 +47,13 @@ void connect_wifi(void) {
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL));
 
-    wifi_config_t wifi_config = {};
+    wifi_config_t wifi_config = {
+    .sta = {
+        .ssid = "",
+        .password = ""
+    }
+};
+
     strcpy((char *)wifi_config.sta.ssid, wifi_ssid);
     strcpy((char *)wifi_config.sta.password, wifi_pass);
 
@@ -79,18 +85,20 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event) {
 // 🚀 Función para iniciar cliente MQTT
 static void mqtt_app_start(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = mqtt_uri,
-        .event_handle = mqtt_event_handler_cb,
+        .broker.address.uri = mqtt_uri,
     };
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler_cb, NULL);
     esp_mqtt_client_start(client);
+
 
     while (1) {
         esp_mqtt_client_publish(client, mqtt_topic, "Hola desde ESP32", 0, 1, 0);
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
+void parse_command(char *line);
 
 // 🧵 Tarea que escucha comandos por consola
 void command_task(void *pvParameters) {
