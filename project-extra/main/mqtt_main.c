@@ -300,7 +300,7 @@ static void mqtt5_app_start(void)
     esp_mqtt_client_start(client);
 }
 
-void app_main(void)
+void mqtt_main(void)
 {
 
     ESP_LOGI(TAG, "[APP] Startup..");
@@ -326,4 +326,21 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
 
     mqtt5_app_start();
+     // Inicializa NVS (memoria para guardar datos)
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
+    // Inicializa red y eventos (necesario antes de usar WiFi o MQTT)
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    // ✨ Acá arrancamos la tarea que lee comandos por consola
+    xTaskCreate(&command_task, "command_task", 4096, NULL, 5, NULL);
+
+    // En este punto todavía no nos conectamos a WiFi ni MQTT
+    // Lo haremos después, cuando vos decidas activar con los comandos
 }
