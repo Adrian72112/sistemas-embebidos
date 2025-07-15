@@ -5626,6 +5626,46 @@
                 "range": null,
                 "title": null,
                 "type": "bool"
+            },
+            {
+                "children": [],
+                "depends_on": null,
+                "help": null,
+                "id": "WIFI_SSID",
+                "name": "WIFI_SSID",
+                "range": null,
+                "title": "WiFi SSID",
+                "type": "string"
+            },
+            {
+                "children": [],
+                "depends_on": null,
+                "help": null,
+                "id": "WIFI_PASS",
+                "name": "WIFI_PASS",
+                "range": null,
+                "title": "WiFi Password",
+                "type": "string"
+            },
+            {
+                "children": [],
+                "depends_on": null,
+                "help": null,
+                "id": "MQTT_URI",
+                "name": "MQTT_URI",
+                "range": null,
+                "title": "MQTT Broker URI",
+                "type": "string"
+            },
+            {
+                "children": [],
+                "depends_on": null,
+                "help": null,
+                "id": "MQTT_TOPIC",
+                "name": "MQTT_TOPIC",
+                "range": null,
+                "title": "MQTT Topic",
+                "type": "string"
             }
         ],
         "depends_on": null,

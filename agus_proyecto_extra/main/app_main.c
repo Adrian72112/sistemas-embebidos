@@ -16,6 +16,12 @@
 #include "esp_log.h"
 #include "mqtt_client.h"
 
+#define WIFI_SSID CONFIG_WIFI_SSID
+#define WIFI_PASS CONFIG_WIFI_PASS
+#define MQTT_BROKER CONFIG_MQTT_URI
+#define MQTT_TOPIC CONFIG_MQTT_TOPIC
+
+
 static const char *TAG = "mqtt5_example";
 
 static void log_error_if_nonzero(const char *message, int error_code)
@@ -208,7 +214,7 @@ static void mqtt5_app_start(void)
     esp_mqtt_client_config_t mqtt5_cfg = {
         .broker.address.uri = CONFIG_BROKER_URL,
         .session.protocol_ver = MQTT_PROTOCOL_V_5,
-        .network.disable_auto_reconnect = true,
+        .network.disable_auto_reconnect = false, //hacer que el cliente mqtt se reconecte solo si se corta la conexion
         .credentials.username = "123",
         .credentials.authentication.password = "456",
         .session.last_will.topic = "/topic/will",
@@ -259,6 +265,8 @@ static void mqtt5_app_start(void)
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt5_event_handler, NULL);
     esp_mqtt_client_start(client);
+    xTaskCreate(&periodic_publish_task, "periodic_publish_task", 4096, client, 5, NULL);// inicia una tarea que publicará mensajes cada 50 segundos.
+
 }
 
 void app_main(void)

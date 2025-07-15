@@ -366,6 +366,10 @@
 #define CONFIG_PARTITION_TABLE_OFFSET 0x8000
 #define CONFIG_PARTITION_TABLE_MD5 1
 #define CONFIG_BROKER_URL "mqtt://mqtt.eclipseprojects.io"
+#define CONFIG_WIFI_SSID "TuSSID"
+#define CONFIG_WIFI_PASS "TuPass"
+#define CONFIG_MQTT_URI "mqtt://broker.hivemq.com:1883"
+#define CONFIG_MQTT_TOPIC "/kaluga/test"
 #define CONFIG_ENV_GPIO_RANGE_MIN 0
 #define CONFIG_ENV_GPIO_RANGE_MAX 46
 #define CONFIG_ENV_GPIO_IN_RANGE_MAX 46
