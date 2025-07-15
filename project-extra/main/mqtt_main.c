@@ -91,9 +91,10 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
 
 //guarda en las variables globales los datos de WiFi y MQTT
 void parse_command(char *line) {
-    if (strncmp(line, "!wifi ", 6) == 0) {
-        sscanf(line + 6, "%s %s", wifi_ssid, wifi_pass);
-        printf("✅ WiFi actualizado: SSID=%s, PASS=%s\n", wifi_ssid, wifi_pass);
+if (strncmp(line, "!wifi ", 6) == 0) {
+    sscanf(line + 6, "%s %s", wifi_ssid, wifi_pass);
+    printf("✅ WiFi actualizado: SSID=%s, PASS=%s\n", wifi_ssid, wifi_pass);
+    connect_wifi();
     } else if (strncmp(line, "!broker ", 8) == 0) {
         sscanf(line + 8, "%s", mqtt_uri);
         printf("✅ Broker actualizado: %s\n", mqtt_uri);
@@ -395,5 +396,6 @@ void mqtt_main(void)
     // 🧵 Arranca la tarea que escucha comandos por consola (!wifi, !broker, etc.)
     xTaskCreate(&command_task, "command_task", 4096, NULL, 5, NULL);
 
-    // ⚠️ Aún no conectamos a WiFi ni MQTT: eso será parte de los próximos pasos
+    connect_wifi();
+
 }
