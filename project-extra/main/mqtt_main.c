@@ -107,6 +107,18 @@ if (strncmp(line, "!wifi ", 6) == 0) {
     } else {
         printf("❌ Comando desconocido: %s\n", line);
     }
+    }
+}
+
+// 🧵 Tarea que publica mensajes periódicamente cada 50 segundos 
+void publish_task(void *pvParameters) {
+    while (1) {
+        if (client != NULL) {
+            esp_mqtt_client_publish(client, mqtt_topic, "Mensaje periódico", 0, 1, 0);
+            printf("📤 Publicado mensaje en %s\n", mqtt_topic);
+        }
+        vTaskDelay(pdMS_TO_TICKS(50000));  // 50 segundos
+    }
 }
 
 
@@ -374,7 +386,8 @@ void mqtt_main(void)
     // 🚫 NO usamos example_connect() porque queremos conexión WiFi dinámica
     // ESP_ERROR_CHECK(example_connect());
 
-    // 🧵 Arranca la tarea que escucha comandos por consola (!wifi, !broker, etc.)
+    // 🧵 Inicializa las tareas
     xTaskCreate(&command_task, "command_task", 4096, NULL, 5, NULL);
+    xTaskCreate(&publish_task, "publish_task", 4096, NULL, 5, NULL);
 
 }
