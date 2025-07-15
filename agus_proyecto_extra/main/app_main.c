@@ -23,6 +23,18 @@
 
 
 static const char *TAG = "mqtt5_example";
+void publicacion_periodica_task(void *pvParameters)
+{
+    esp_mqtt_client_handle_t client = (esp_mqtt_client_handle_t) pvParameters;
+
+    char msg[64];
+    while (1) {
+        snprintf(msg, sizeof(msg), "Kaluga activo");
+        esp_mqtt_client_publish(client, MQTT_TOPIC, msg, 0, 1, 0);
+        ESP_LOGI(TAG, "Mensaje publicado cada 50s: %s", msg);
+        vTaskDelay(pdMS_TO_TICKS(50000)); // 50 segundos
+    }
+}
 
 static void log_error_if_nonzero(const char *message, int error_code)
 {
@@ -115,33 +127,34 @@ static void mqtt5_event_handler(void *handler_args, esp_event_base_t base, int32
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         print_user_property(event->property->user_property);
-        esp_mqtt5_client_set_user_property(&publish_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
-        esp_mqtt5_client_set_publish_property(client, &publish_property);
+        //esp_mqtt5_client_set_user_property(&publish_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
+        //esp_mqtt5_client_set_publish_property(client, &publish_property);
         msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3", 0, 1, 1);
-        esp_mqtt5_client_delete_user_property(publish_property.user_property);
-        publish_property.user_property = NULL;
+        //esp_mqtt5_client_delete_user_property(publish_property.user_property);
+        //publish_property.user_property = NULL;
         ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
-        esp_mqtt5_client_set_user_property(&subscribe_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
-        esp_mqtt5_client_set_subscribe_property(client, &subscribe_property);
-        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
-        esp_mqtt5_client_delete_user_property(subscribe_property.user_property);
-        subscribe_property.user_property = NULL;
+        //esp_mqtt5_client_set_user_property(&subscribe_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
+        //esp_mqtt5_client_set_subscribe_property(client, &subscribe_property);
+        //msg_id = esp_mqtt_client_subscribe(client, MQTT_TOPIC, 0);//suscribr al tópico que se configura desde el menú
+        ESP_LOGI(TAG, "Suscrito al tópico: %s", MQTT_TOPIC);
+        //esp_mqtt5_client_delete_user_property(subscribe_property.user_property);
+        //subscribe_property.user_property = NULL;
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
-        esp_mqtt5_client_set_user_property(&subscribe1_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
-        esp_mqtt5_client_set_subscribe_property(client, &subscribe1_property);
-        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos1", 2);
-        esp_mqtt5_client_delete_user_property(subscribe1_property.user_property);
-        subscribe1_property.user_property = NULL;
+        //esp_mqtt5_client_set_user_property(&subscribe1_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
+        //esp_mqtt5_client_set_subscribe_property(client, &subscribe1_property);
+        //msg_id = esp_mqtt_client_subscribe(client, "/topic/qos1", 2);
+        //esp_mqtt5_client_delete_user_property(subscribe1_property.user_property);
+        //subscribe1_property.user_property = NULL;
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
-        esp_mqtt5_client_set_user_property(&unsubscribe_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
-        esp_mqtt5_client_set_unsubscribe_property(client, &unsubscribe_property);
-        msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos0");
+        //esp_mqtt5_client_set_user_property(&unsubscribe_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
+        //esp_mqtt5_client_set_unsubscribe_property(client, &unsubscribe_property);
+        //msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos0");
         ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
-        esp_mqtt5_client_delete_user_property(unsubscribe_property.user_property);
-        unsubscribe_property.user_property = NULL;
+        //esp_mqtt5_client_delete_user_property(unsubscribe_property.user_property);
+        //unsubscribe_property.user_property = NULL;
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -157,11 +170,11 @@ static void mqtt5_event_handler(void *handler_args, esp_event_base_t base, int32
     case MQTT_EVENT_UNSUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
         print_user_property(event->property->user_property);
-        esp_mqtt5_client_set_user_property(&disconnect_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
-        esp_mqtt5_client_set_disconnect_property(client, &disconnect_property);
-        esp_mqtt5_client_delete_user_property(disconnect_property.user_property);
-        disconnect_property.user_property = NULL;
-        esp_mqtt_client_disconnect(client);
+        //esp_mqtt5_client_set_user_property(&disconnect_property.user_property, user_property_arr, USE_PROPERTY_ARR_SIZE);
+        //esp_mqtt5_client_set_disconnect_property(client, &disconnect_property);
+        //esp_mqtt5_client_delete_user_property(disconnect_property.user_property);
+        //disconnect_property.user_property = NULL;
+        //esp_mqtt_client_disconnect(client);
         break;
     case MQTT_EVENT_PUBLISHED:
         ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
@@ -212,7 +225,7 @@ static void mqtt5_app_start(void)
     };
 
     esp_mqtt_client_config_t mqtt5_cfg = {
-        .broker.address.uri = CONFIG_BROKER_URL,
+        .broker.address.uri = MQTT_BROKER,
         .session.protocol_ver = MQTT_PROTOCOL_V_5,
         .network.disable_auto_reconnect = false, //hacer que el cliente mqtt se reconecte solo si se corta la conexion
         .credentials.username = "123",
@@ -265,7 +278,7 @@ static void mqtt5_app_start(void)
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt5_event_handler, NULL);
     esp_mqtt_client_start(client);
-    xTaskCreate(&periodic_publish_task, "periodic_publish_task", 4096, client, 5, NULL);// inicia una tarea que publicará mensajes cada 50 segundos.
+    xTaskCreate(&publicacion_periodica_task, "publicacion_periodica_task", 4096, client, 5, NULL);// inicia una tarea que publicará mensajes cada 50 segundos.
 
 }
 

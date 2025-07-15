@@ -5610,26 +5610,6 @@
             {
                 "children": [],
                 "depends_on": null,
-                "help": "URL of the broker to connect to",
-                "id": "BROKER_URL",
-                "name": "BROKER_URL",
-                "range": null,
-                "title": "Broker URL",
-                "type": "string"
-            },
-            {
-                "children": [],
-                "depends_on": null,
-                "help": null,
-                "id": "BROKER_URL_FROM_STDIN",
-                "name": "BROKER_URL_FROM_STDIN",
-                "range": null,
-                "title": null,
-                "type": "bool"
-            },
-            {
-                "children": [],
-                "depends_on": null,
                 "help": null,
                 "id": "WIFI_SSID",
                 "name": "WIFI_SSID",

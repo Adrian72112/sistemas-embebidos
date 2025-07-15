@@ -365,7 +365,6 @@
 #define CONFIG_PARTITION_TABLE_FILENAME "partitions_singleapp.csv"
 #define CONFIG_PARTITION_TABLE_OFFSET 0x8000
 #define CONFIG_PARTITION_TABLE_MD5 1
-#define CONFIG_BROKER_URL "mqtt://mqtt.eclipseprojects.io"
 #define CONFIG_WIFI_SSID "TuSSID"
 #define CONFIG_WIFI_PASS "TuPass"
 #define CONFIG_MQTT_URI "mqtt://broker.hivemq.com:1883"

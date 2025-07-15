@@ -477,7 +477,6 @@ CONFIG_PARTITION_TABLE_MD5=y
 #
 # Example Configuration
 #
-CONFIG_BROKER_URL="mqtt://mqtt.eclipseprojects.io"
 CONFIG_WIFI_SSID="TuSSID"
 CONFIG_WIFI_PASS="TuPass"
 CONFIG_MQTT_URI="mqtt://broker.hivemq.com:1883"
