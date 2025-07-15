@@ -15,6 +15,17 @@
 #include "protocol_examples_common.h"
 #include "esp_log.h"
 #include "mqtt_client.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_netif.h"
+#include "esp_log.h"
+#include "esp_err.h"
+
+// Cliente MQTT global (lo usaremos en distintas tareas)
+esp_mqtt_client_handle_t client = NULL;
+
+// 🔎 TAG para los logs
+static const char *TAG = "mqtt_main";
 
 // Variables globales para configuración dinámica
 char wifi_ssid[32] = "MiRedPorDefecto";
@@ -22,12 +33,62 @@ char wifi_pass[64] = "MiClavePorDefecto";
 char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
 char mqtt_topic[64] = "kaluga/test";
 
-// Cliente MQTT global (lo usaremos en distintas tareas)
-esp_mqtt_client_handle_t client = NULL;
+//connección WiFi y MQTT dinámica
+void connect_wifi(void) {
+    // Crear interfaz de red
+    esp_netif_create_default_wifi_sta();
+
+    // Configuración por defecto
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    // Configuración del WiFi usando tus variables
+    wifi_config_t wifi_config = { 0 };
+    strncpy((char *)wifi_config.sta.ssid, wifi_ssid, sizeof(wifi_config.sta.ssid));
+    strncpy((char *)wifi_config.sta.password, wifi_pass, sizeof(wifi_config.sta.password));
+
+    // Inicializar WiFi en modo estación
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    ESP_LOGI(TAG, "📡 Intentando conectar a WiFi SSID: %s ...", wifi_ssid);
+
+    // Esperar conexión (forma simple y bloqueante)
+    EventBits_t bits;
+    wifi_event_group = xEventGroupCreate();
+
+    esp_event_handler_instance_t instance_any_id;
+    esp_event_handler_instance_register(WIFI_EVENT,
+                                        ESP_EVENT_ANY_ID,
+                                        &wifi_event_handler,
+                                        NULL,
+                                        &instance_any_id);
+
+    esp_event_handler_instance_t instance_got_ip;
+    esp_event_handler_instance_register(IP_EVENT,
+                                        IP_EVENT_STA_GOT_IP,
+                                        &wifi_event_handler,
+                                        NULL,
+                                        &instance_got_ip);
+}
+
+// Manejo de eventos WiFi
+static void wifi_event_handler(void* arg, esp_event_base_t event_base,
+                               int32_t event_id, void* event_data)
+{
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        ESP_LOGI(TAG, "🔌 WiFi desconectado, reintentando...");
+        esp_wifi_connect();
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ESP_LOGI(TAG, "✅ Conectado. IP: " IPSTR, IP2STR(&event->ip_info.ip));
+    }
+}
 
 
-// 🔎 TAG para los logs
-static const char *TAG = "mqtt_main";
 //guarda en las variables globales los datos de WiFi y MQTT
 void parse_command(char *line) {
     if (strncmp(line, "!wifi ", 6) == 0) {
