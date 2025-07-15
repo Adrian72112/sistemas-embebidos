@@ -7,6 +7,10 @@
 #include "esp_event.h"
 #include "mqtt_client.h"
 #include "driver/gpio.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_mac.h"  // necesario desde ESP-IDF v5.0
+
 
 #ifndef CONFIG_LOG_MAXIMUM_LEVEL
 #define CONFIG_LOG_MAXIMUM_LEVEL ESP_LOG_INFO
@@ -55,6 +59,27 @@ void publish_task(void *pvParameters) {
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }
+void example_connect(void) {
+    esp_netif_init();
+    esp_event_loop_create_default();
+
+    esp_netif_create_default_wifi_sta();
+    
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg);
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_start();
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = "NOMBRE_DE_TU_WIFI",
+            .password = "CONTRASEÑA_WIFI",
+        },
+    };
+    esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    esp_wifi_connect();
+}
+
 
 static void mqtt5_app_start(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
@@ -63,10 +88,27 @@ static void mqtt5_app_start(void) {
     };
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt5_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+
     esp_mqtt_client_start(client);
 
     xTaskCreate(&publish_task, "publish_task", 4096, client, 5, NULL);
+}
+void wifi_init_sta(void)
+{
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = "NOMBRE_DE_TU_WIFI",
+            .password = "CONTRASEÑA_WIFI",
+        },
+    };
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_connect());
 }
 
 void app_main(void) {
@@ -77,6 +119,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(example_connect());
 
+    wifi_init_sta();
     gpio_reset_pin(GPIO_NUM_2);
     gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
 
