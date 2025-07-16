@@ -32,7 +32,6 @@ static void uart_event_task(void *pvParameters)
     uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE);
     if (dtmp == NULL) {
         ESP_LOGE(TAG, "No se pudo asignar memoria para el búfer UART. La tarea de UART finalizará.");
-char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
         vTaskDelete(NULL);
         return;
     }
@@ -47,16 +46,17 @@ char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
                     ESP_LOGI(TAG, "Recibido: %s", dtmp);
 
                     if (strncmp((char *)dtmp, "!wifi", 5) == 0) {
-                        char ssid_temp[64], pass_temp[64];
-                        if (sscanf((char *)dtmp, "!wifi %63s %63s", ssid_temp, pass_temp) == 2) {
-                            strncpy(wifi_ssid, ssid_temp, sizeof(wifi_ssid) - 1);
-                            wifi_ssid[sizeof(wifi_ssid) - 1] = '\0';
-                            strncpy(wifi_pass, pass_temp, sizeof(wifi_pass) - 1);
-                            wifi_pass[sizeof(wifi_pass) - 1] = '\0';
-                            ESP_LOGI(TAG, "Nuevo WiFi -> SSID: %s, PASS: [OCULTO]", wifi_ssid);
+                        char *ssid = strtok((char *)dtmp + 6, " ");
+                        char *pass = strtok(NULL, " ");
+                        if (ssid && pass) {
+                            strncpy(wifi_ssid, ssid, sizeof(wifi_ssid));
+                            strncpy(wifi_pass, pass, sizeof(wifi_pass));
+                            ESP_LOGI(TAG, "SSID configurado: %s", wifi_ssid);
+                            ESP_LOGI(TAG, "Password configurada: %s", wifi_pass);
                         } else {
-                            ESP_LOGW(TAG, "Formato incorrecto para !wifi. Uso: !wifi <ssid> <pass>");
+                            ESP_LOGE(TAG, "Formato incorrecto. Uso: !wifi ssid password");
                         }
+
                     } else if (strncmp((char *)dtmp, "!topic", 6) == 0) {
                         char topic_temp[64];
                         if (sscanf((char *)dtmp, "!topic %63s", topic_temp) == 1) {
@@ -66,13 +66,7 @@ char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
                         } else {
                             ESP_LOGW(TAG, "Formato incorrecto para !topic. Uso: !topic <topico>");
                         }
-                    } else if (strncmp((char *)dtmp, "!done", 5) == 0) { // ¡NUEVO COMANDO!
-                        ESP_LOGI(TAG, "Comando !done recibido. Liberando semáforo para continuar.");
-                        if (uart_sync_semaphore != NULL) {
-                            xSemaphoreGive(uart_sync_semaphore); // Liberar el semáforo para desbloquear app_main
-                        }
-                    } else {
-                        ESP_LOGW(TAG, "Comando desconocido: %s", dtmp);
+
                     } else if (strncmp((char *)dtmp, "!uri", 4) == 0) {
                         char uri_temp[128];
                         if (sscanf((char *)dtmp, "!uri %127s", uri_temp) == 1) {
@@ -82,6 +76,15 @@ char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
                         } else {
                             ESP_LOGW(TAG, "Formato incorrecto para !uri. Uso: !uri <uri>");
                         }
+
+                    } else if (strncmp((char *)dtmp, "!done", 5) == 0) {
+                        ESP_LOGI(TAG, "Comando !done recibido. Liberando semáforo para continuar.");
+                        if (uart_sync_semaphore != NULL) {
+                            xSemaphoreGive(uart_sync_semaphore);
+                        }
+
+                    } else {
+                        ESP_LOGW(TAG, "Comando desconocido: %s", dtmp);
                     }
                     break;
 
@@ -90,32 +93,37 @@ char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
                     uart_flush_input(EX_UART_NUM);
                     xQueueReset(uart0_queue);
                     break;
+
                 case UART_BUFFER_FULL:
                     ESP_LOGW(TAG, "UART Buffer Lleno. Vaciando buffer de entrada.");
                     uart_flush_input(EX_UART_NUM);
                     xQueueReset(uart0_queue);
                     break;
+
                 case UART_PATTERN_DET:
                     ESP_LOGI(TAG, "Patrón UART detectado.");
                     break;
+
                 case UART_BREAK:
                     ESP_LOGI(TAG, "Break UART detectado.");
                     break;
+
                 case UART_PARITY_ERR:
                     ESP_LOGE(TAG, "Error de paridad UART.");
                     break;
+
                 case UART_FRAME_ERR:
                     ESP_LOGE(TAG, "Error de trama UART.");
                     break;
+
                 default:
                     ESP_LOGW(TAG, "Evento UART no manejado: %d", event.type);
                     break;
             }
         }
     }
-    // free(dtmp); // Inalcanzable en un for(;;)
-    // vTaskDelete(NULL); // Inalcanzable en un for(;;)
 }
+
 
 // Función de inicialización del UART de comandos
 void leido_uart_init(SemaphoreHandle_t sync_semaphore) // ¡NUEVA FIRMA!
