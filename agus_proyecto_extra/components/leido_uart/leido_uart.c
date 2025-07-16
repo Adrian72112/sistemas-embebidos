@@ -4,9 +4,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"   // ¡NUEVO! Incluir FreeRTOS semaphores
 #include "driver/uart.h"
 #include "esp_log.h"
-#include "leido_uart.h" // Asegurate de que este archivo incluya las declaraciones extern
+#include "leido_uart.h"
 
 #define EX_UART_NUM UART_NUM_0
 #define BUF_SIZE (1024)
@@ -15,11 +16,14 @@
 static QueueHandle_t uart0_queue;
 static const char *TAG = "leido_uart";
 
-// Variables globales. Se inicializan con valores por defecto.
-// Estas variables son las que app_main.c usará para la conexión.
+// Variables globales
 char wifi_ssid[64] = "ssid_por_defecto";
 char wifi_pass[64] = "pass_por_defecto";
 char mqtt_topic[64] = "/topico/por/defecto";
+
+// Puntero global al semáforo para que la tarea de eventos UART pueda acceder a él.
+// Será inicializado en uart_cmd_init
+static SemaphoreHandle_t uart_sync_semaphore = NULL;
 
 static void uart_event_task(void *pvParameters)
 {
@@ -32,28 +36,21 @@ static void uart_event_task(void *pvParameters)
     }
 
     for (;;) {
-        // Espera indefinidamente por eventos en la cola UART
         if (xQueueReceive(uart0_queue, (void *)&event, portMAX_DELAY)) {
-            // Limpia el buffer temporal para cada nuevo evento
             bzero(dtmp, RD_BUF_SIZE);
-
             switch (event.type) {
                 case UART_DATA:
-                    // Lee los bytes recibidos y asegura la terminación nula
                     uart_read_bytes(EX_UART_NUM, dtmp, event.size, portMAX_DELAY);
                     dtmp[event.size] = '\0';
                     ESP_LOGI(TAG, "Recibido: %s", dtmp);
 
-                    // Procesa los comandos
                     if (strncmp((char *)dtmp, "!wifi", 5) == 0) {
                         char ssid_temp[64], pass_temp[64];
-                        // sscanf con %63s para evitar desbordamientos de búfer en los temporales
                         if (sscanf((char *)dtmp, "!wifi %63s %63s", ssid_temp, pass_temp) == 2) {
-                            // Copia de forma segura a las variables globales
                             strncpy(wifi_ssid, ssid_temp, sizeof(wifi_ssid) - 1);
-                            wifi_ssid[sizeof(wifi_ssid) - 1] = '\0'; // Asegura terminación nula
+                            wifi_ssid[sizeof(wifi_ssid) - 1] = '\0';
                             strncpy(wifi_pass, pass_temp, sizeof(wifi_pass) - 1);
-                            wifi_pass[sizeof(wifi_pass) - 1] = '\0'; // Asegura terminación nula
+                            wifi_pass[sizeof(wifi_pass) - 1] = '\0';
                             ESP_LOGI(TAG, "Nuevo WiFi -> SSID: %s, PASS: [OCULTO]", wifi_ssid);
                         } else {
                             ESP_LOGW(TAG, "Formato incorrecto para !wifi. Uso: !wifi <ssid> <pass>");
@@ -62,10 +59,15 @@ static void uart_event_task(void *pvParameters)
                         char topic_temp[64];
                         if (sscanf((char *)dtmp, "!topic %63s", topic_temp) == 1) {
                             strncpy(mqtt_topic, topic_temp, sizeof(mqtt_topic) - 1);
-                            mqtt_topic[sizeof(mqtt_topic) - 1] = '\0'; // Asegura terminación nula
+                            mqtt_topic[sizeof(mqtt_topic) - 1] = '\0';
                             ESP_LOGI(TAG, "Nuevo tópico -> %s", mqtt_topic);
                         } else {
                             ESP_LOGW(TAG, "Formato incorrecto para !topic. Uso: !topic <topico>");
+                        }
+                    } else if (strncmp((char *)dtmp, "!done", 5) == 0) { // ¡NUEVO COMANDO!
+                        ESP_LOGI(TAG, "Comando !done recibido. Liberando semáforo para continuar.");
+                        if (uart_sync_semaphore != NULL) {
+                            xSemaphoreGive(uart_sync_semaphore); // Liberar el semáforo para desbloquear app_main
                         }
                     } else {
                         ESP_LOGW(TAG, "Comando desconocido: %s", dtmp);
@@ -84,7 +86,6 @@ static void uart_event_task(void *pvParameters)
                     break;
                 case UART_PATTERN_DET:
                     ESP_LOGI(TAG, "Patrón UART detectado.");
-                    // Si estás usando detección de patrón, podrías añadir lógica aquí
                     break;
                 case UART_BREAK:
                     ESP_LOGI(TAG, "Break UART detectado.");
@@ -101,15 +102,16 @@ static void uart_event_task(void *pvParameters)
             }
         }
     }
-
-    // Esta línea es inalcanzable porque la tarea se ejecuta en un bucle infinito
-    // free(dtmp);
-    // vTaskDelete(NULL);
+    // free(dtmp); // Inalcanzable en un for(;;)
+    // vTaskDelete(NULL); // Inalcanzable en un for(;;)
 }
 
-// Función de inicialización del UART de comandos, expuesta a app_main.c
-void leido_uart_init(void)
+// Función de inicialización del UART de comandos
+void leido_uart_init(SemaphoreHandle_t sync_semaphore) // ¡NUEVA FIRMA!
 {
+    // Almacenar el handle del semáforo para que la tarea uart_event_task pueda usarlo
+    uart_sync_semaphore = sync_semaphore;
+
     uart_config_t uart_config = {
         .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
@@ -119,15 +121,10 @@ void leido_uart_init(void)
         .source_clk = UART_SCLK_DEFAULT,
     };
 
-    // Instala el driver UART, configura los pines y crea la cola de eventos
-    // buffer de lectura y escritura (doble tamaño para búfer doble), y tamaño de la cola de eventos
     ESP_ERROR_CHECK(uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 20, &uart0_queue, 0));
     ESP_ERROR_CHECK(uart_param_config(EX_UART_NUM, &uart_config));
-    // No cambiamos los pines TX/RX; usa los predeterminados si no se especifican.
     ESP_ERROR_CHECK(uart_set_pin(EX_UART_NUM, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
 
-    // Crea la tarea para manejar los eventos UART
-    // La pila de 4096 bytes suele ser suficiente para esta tarea.
     xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 10, NULL);
-    ESP_LOGI(TAG, "UART inicializado. Envía comandos: !wifi <ssid> <pass> o !topic <topico>");
+    ESP_LOGI(TAG, "UART inicializado. Envía comandos: !wifi <ssid> <pass>, !topic <topico>. Finaliza con !done.");
 }
