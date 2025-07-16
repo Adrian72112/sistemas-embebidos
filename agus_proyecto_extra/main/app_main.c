@@ -14,7 +14,6 @@
 #include "esp_netif.h"
 #include "esp_mac.h"
 #include "sdkconfig.h"
-
 #include "leido_uart.h" // Nuestro componente UART, que declara externas las variables
 
 static const char *TAG = "MQTT_MAIN";
