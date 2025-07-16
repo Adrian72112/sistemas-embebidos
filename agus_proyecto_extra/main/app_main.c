@@ -18,11 +18,7 @@
 
 static const char *TAG = "MQTT_MAIN";
 
-// Variables configurables desde UART
-static char wifi_ssid[64] = "";
-static char wifi_pass[64] = "";
-static char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
-static char mqtt_topic[128] = "kaluga/test";
+
 
 // Cliente MQTT global
 esp_mqtt_client_handle_t client = NULL;
