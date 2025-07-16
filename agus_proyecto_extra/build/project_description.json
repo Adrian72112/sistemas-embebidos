@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "agus_proyecto_extra",
-    "project_version":    "a5cf8ea-dirty",
+    "project_version":    "adee402-dirty",
     "project_path":       "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra",
     "idf_path":           "C:/Users/Agustina/esp/v5.4.1/esp-idf",
     "build_dir":          "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build",
@@ -1166,7 +1166,7 @@
             "managed_priv_reqs": [],
             "file": "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/leido_uart/libleido_uart.a",
             "sources": [ "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/components/leido_uart/leido_uart.c" ],
-            "include_dirs": [ "." ]
+            "include_dirs": [ "include" ]
         },
         "log": {
             "alias": "idf::log",
@@ -1203,14 +1203,14 @@
             "target": "___idf_main",
             "prefix": "idf",
             "dir": "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main",
-            "type": "CONFIG_ONLY",
+            "type": "LIBRARY",
             "lib": "__idf_main",
-            "reqs": [],
+            "reqs": [ "mqtt", "nvs_flash", "esp_wifi", "leido_uart" ],
             "priv_reqs": [ "protocol_examples_common" ],
             "managed_reqs": [],
             "managed_priv_reqs": [ "protocol_examples_common" ],
-            "file": "",
-            "sources": [],
+            "file": "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/main/libmain.a",
+            "sources": [ "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main/app_main.c" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {
@@ -2886,7 +2886,7 @@
             "prefix": "idf",
             "dir": "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main",
             "lib": "__idf_main",
-            "reqs": [],
+            "reqs": [ "mqtt", "nvs_flash", "esp_wifi", "leido_uart" ],
             "priv_reqs": [ "protocol_examples_common" ],
             "managed_reqs": [],
             "managed_priv_reqs": [ "protocol_examples_common" ],
@@ -2902,7 +2902,7 @@
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "include_dirs": [ "." ]
+            "include_dirs": [ "include" ]
         },
         "protocol_examples_common": {
             "alias": "idf::protocol_examples_common",

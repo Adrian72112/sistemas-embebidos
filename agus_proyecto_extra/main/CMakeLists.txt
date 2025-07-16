@@ -1,4 +1,5 @@
-idf_component_register(SRCS
-                    INCLUDE_DIRS ".")
-set(COMPONENT_REQUIRES esp-mqtt)
-set(COMPONENT_PRIV_REQUIRES esp-mqtt)
+idf_component_register(SRCS "app_main.c"
+                       INCLUDE_DIRS "."
+                       REQUIRES mqtt nvs_flash esp_wifi leido_uart)
+set(COMPONENT_REQUIRES mqtt nvs_flash esp_wifi) 
+set(COMPONENT_PRIV_REQUIRES mqtt nvs_flash esp_wifi)
