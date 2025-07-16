@@ -1,3 +1,3 @@
 idf_component_register(SRCS "app_main.c"
-                    INCLUDE_DIRS "."
-                    PRIV_REQUIRES "mqtt")
+                       INCLUDE_DIRS "."
+                       PRIV_REQUIRES "mqtt" "esp_wifi" "nvs_flash" "esp_event" "esp_netif" "driver")

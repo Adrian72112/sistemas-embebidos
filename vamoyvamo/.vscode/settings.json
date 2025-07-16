@@ -16,5 +16,8 @@
     "--compile-commands-dir=${workspaceFolder}\\build"
   ],
   "idf.flashType": "UART",
-  "idf.portWin": "COM6"
+  "idf.portWin": "COM6",
+  "files.associations": {
+    "esp_event.h": "c"
+  }
 }

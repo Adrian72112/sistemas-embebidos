@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "vamoyvamo",
-    "project_version":    "fd58e8c-dirty",
+    "project_version":    "a241155-dirty",
     "project_path":       "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/vamoyvamo",
     "idf_path":           "C:/Users/Agustina/esp/v5.4.1/esp-idf",
     "build_dir":          "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/vamoyvamo/build",
@@ -1191,7 +1191,7 @@
             "type": "LIBRARY",
             "lib": "__idf_main",
             "reqs": [],
-            "priv_reqs": [ "mqtt", "protocol_examples_common" ],
+            "priv_reqs": [ "mqtt", "esp_wifi", "nvs_flash", "esp_event", "esp_netif", "driver", "protocol_examples_common" ],
             "managed_reqs": [],
             "managed_priv_reqs": [ "protocol_examples_common" ],
             "file": "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/vamoyvamo/build/esp-idf/main/libmain.a",
@@ -2872,7 +2872,7 @@
             "dir": "C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/vamoyvamo/main",
             "lib": "__idf_main",
             "reqs": [],
-            "priv_reqs": [ "mqtt", "protocol_examples_common" ],
+            "priv_reqs": [ "mqtt", "esp_wifi", "nvs_flash", "esp_event", "esp_netif", "driver", "protocol_examples_common" ],
             "managed_reqs": [],
             "managed_priv_reqs": [ "protocol_examples_common" ],
             "include_dirs": [ "." ]
