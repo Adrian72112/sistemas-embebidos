@@ -1,4 +1,4 @@
-/* * Data converted from C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 #if !defined (__APPLE__) && !defined (__linux__)

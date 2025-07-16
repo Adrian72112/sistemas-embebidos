@@ -1,13 +1,13 @@
 # Target labels
  bootloader
 # Source files and their labels
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/CMakeFiles/bootloader
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/CMakeFiles/bootloader.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/CMakeFiles/bootloader-complete.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/CMakeFiles/bootloader
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/CMakeFiles/bootloader.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/CMakeFiles/bootloader-complete.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule

@@ -1,86 +1,85 @@
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/xtensa/libxtensa.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_gpio/libesp_driver_gpio.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_pm/libesp_pm.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/mbedtls/libmbedtls.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_app_format/libesp_app_format.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_bootloader_format/libesp_bootloader_format.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/app_update/libapp_update.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_partition/libesp_partition.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/efuse/libefuse.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/bootloader_support/libbootloader_support.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_mm/libesp_mm.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/spi_flash/libspi_flash.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_system/libesp_system.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_common/libesp_common.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_rom/libesp_rom.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/hal/libhal.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/log/liblog.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/heap/libheap.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/soc/libsoc.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_security/libesp_security.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_hw_support/libesp_hw_support.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/freertos/libfreertos.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/newlib/libnewlib.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/pthread/libpthread.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/cxx/libcxx.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_timer/libesp_timer.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_gptimer/libesp_driver_gptimer.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_ringbuf/libesp_ringbuf.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_uart/libesp_driver_uart.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/app_trace/libapp_trace.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_event/libesp_event.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/nvs_flash/libnvs_flash.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_pcnt/libesp_driver_pcnt.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_spi/libesp_driver_spi.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_i2s/libesp_driver_i2s.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/sdmmc/libsdmmc.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_sdspi/libesp_driver_sdspi.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_dac/libesp_driver_dac.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_rmt/libesp_driver_rmt.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_tsens/libesp_driver_tsens.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_sdm/libesp_driver_sdm.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_i2c/libesp_driver_i2c.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_ledc/libesp_driver_ledc.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/driver/libdriver.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_phy/libesp_phy.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_vfs_console/libesp_vfs_console.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/vfs/libvfs.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/lwip/liblwip.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_netif/libesp_netif.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/wpa_supplicant/libwpa_supplicant.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_coex/libesp_coex.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_wifi/libesp_wifi.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/unity/libunity.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/cmock/libcmock.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/console/libconsole.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/http_parser/libhttp_parser.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp-tls/libesp-tls.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_adc/libesp_adc.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_cam/libesp_driver_cam.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_eth/libesp_eth.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_gdbstub/libesp_gdbstub.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_hid/libesp_hid.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/tcp_transport/libtcp_transport.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_http_client/libesp_http_client.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_http_server/libesp_http_server.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_https_ota/libesp_https_ota.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_https_server/libesp_https_server.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_lcd/libesp_lcd.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/protobuf-c/libprotobuf-c.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/protocomm/libprotocomm.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_local_ctrl/libesp_local_ctrl.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/espcoredump/libespcoredump.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/wear_levelling/libwear_levelling.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/fatfs/libfatfs.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/json/libjson.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/mqtt/libmqtt.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/nvs_sec_provider/libnvs_sec_provider.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/perfmon/libperfmon.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/rt/librt.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/spiffs/libspiffs.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/touch_element/libtouch_element.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/usb/libusb.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/wifi_provisioning/libwifi_provisioning.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/leido_uart/libleido_uart.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/protocol_examples_common/libprotocol_examples_common.a
-C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/main/libmain.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/xtensa/libxtensa.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_gpio/libesp_driver_gpio.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_pm/libesp_pm.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/mbedtls/libmbedtls.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_app_format/libesp_app_format.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/app_update/libapp_update.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_partition/libesp_partition.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/efuse/libefuse.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/bootloader_support/libbootloader_support.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_mm/libesp_mm.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/spi_flash/libspi_flash.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_system/libesp_system.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_common/libesp_common.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_rom/libesp_rom.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/hal/libhal.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/log/liblog.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/heap/libheap.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/soc/libsoc.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_security/libesp_security.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_hw_support/libesp_hw_support.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/freertos/libfreertos.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/newlib/libnewlib.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/pthread/libpthread.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/cxx/libcxx.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_timer/libesp_timer.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_gptimer/libesp_driver_gptimer.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_ringbuf/libesp_ringbuf.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_uart/libesp_driver_uart.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/app_trace/libapp_trace.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_event/libesp_event.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/nvs_flash/libnvs_flash.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_pcnt/libesp_driver_pcnt.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_spi/libesp_driver_spi.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_i2s/libesp_driver_i2s.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/sdmmc/libsdmmc.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_sdspi/libesp_driver_sdspi.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_dac/libesp_driver_dac.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_rmt/libesp_driver_rmt.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_tsens/libesp_driver_tsens.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_sdm/libesp_driver_sdm.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_i2c/libesp_driver_i2c.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_ledc/libesp_driver_ledc.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/driver/libdriver.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_phy/libesp_phy.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_vfs_console/libesp_vfs_console.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/vfs/libvfs.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/lwip/liblwip.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_netif/libesp_netif.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/wpa_supplicant/libwpa_supplicant.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_coex/libesp_coex.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_wifi/libesp_wifi.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/unity/libunity.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/cmock/libcmock.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/console/libconsole.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/http_parser/libhttp_parser.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp-tls/libesp-tls.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_adc/libesp_adc.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_driver_cam/libesp_driver_cam.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_eth/libesp_eth.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_gdbstub/libesp_gdbstub.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_hid/libesp_hid.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/tcp_transport/libtcp_transport.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_http_client/libesp_http_client.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_http_server/libesp_http_server.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_https_ota/libesp_https_ota.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_https_server/libesp_https_server.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_lcd/libesp_lcd.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/protobuf-c/libprotobuf-c.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/protocomm/libprotocomm.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/esp_local_ctrl/libesp_local_ctrl.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/espcoredump/libespcoredump.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/wear_levelling/libwear_levelling.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/fatfs/libfatfs.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/json/libjson.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/mqtt/libmqtt.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/nvs_sec_provider/libnvs_sec_provider.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/perfmon/libperfmon.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/rt/librt.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/spiffs/libspiffs.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/touch_element/libtouch_element.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/usb/libusb.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/wifi_provisioning/libwifi_provisioning.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/leido_uart/libleido_uart.a
+C:/Users/pierina borsieri/Documentos/GitHub/sistemas-embebidos/agus_proyecto_extra/build/esp-idf/main/libmain.a
