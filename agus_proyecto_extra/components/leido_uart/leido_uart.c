@@ -4,7 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-#include "freertos/semphr.h"   // ¡NUEVO! Incluir FreeRTOS semaphores
+#include "freertos/semphr.h"
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "leido_uart.h"
@@ -20,7 +20,7 @@ static const char *TAG = "leido_uart";
 char wifi_ssid[64] = "ssid_por_defecto";
 char wifi_pass[64] = "pass_por_defecto";
 char mqtt_topic[64] = "/topico/por/defecto";
-char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
+char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883"; // Declaración global de mqtt_uri
 
 // Puntero global al semáforo para que la tarea de eventos UART pueda acceder a él.
 // Será inicializado en uart_cmd_init
@@ -32,7 +32,7 @@ static void uart_event_task(void *pvParameters)
     uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE);
     if (dtmp == NULL) {
         ESP_LOGE(TAG, "No se pudo asignar memoria para el búfer UART. La tarea de UART finalizará.");
-char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
+        // Se ha ELIMINADO la declaración redundante de mqtt_uri aquí.
         vTaskDelete(NULL);
         return;
     }
@@ -66,14 +66,12 @@ char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
                         } else {
                             ESP_LOGW(TAG, "Formato incorrecto para !topic. Uso: !topic <topico>");
                         }
-                    } else if (strncmp((char *)dtmp, "!done", 5) == 0) { // ¡NUEVO COMANDO!
+                    } else if (strncmp((char *)dtmp, "!done", 5) == 0) {
                         ESP_LOGI(TAG, "Comando !done recibido. Liberando semáforo para continuar.");
                         if (uart_sync_semaphore != NULL) {
                             xSemaphoreGive(uart_sync_semaphore); // Liberar el semáforo para desbloquear app_main
                         }
-                    } else {
-                        ESP_LOGW(TAG, "Comando desconocido: %s", dtmp);
-                    } else if (strncmp((char *)dtmp, "!uri", 4) == 0) {
+                    } else if (strncmp((char *)dtmp, "!uri", 4) == 0) { // Bloque movido ANTES del 'else' final
                         char uri_temp[128];
                         if (sscanf((char *)dtmp, "!uri %127s", uri_temp) == 1) {
                             strncpy(mqtt_uri, uri_temp, sizeof(mqtt_uri) - 1);
@@ -82,6 +80,8 @@ char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
                         } else {
                             ESP_LOGW(TAG, "Formato incorrecto para !uri. Uso: !uri <uri>");
                         }
+                    } else { // Este 'else' ahora captura todos los comandos desconocidos
+                        ESP_LOGW(TAG, "Comando desconocido: %s", dtmp);
                     }
                     break;
 
@@ -118,7 +118,7 @@ char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
 }
 
 // Función de inicialización del UART de comandos
-void leido_uart_init(SemaphoreHandle_t sync_semaphore) // ¡NUEVA FIRMA!
+void leido_uart_init(SemaphoreHandle_t sync_semaphore)
 {
     // Almacenar el handle del semáforo para que la tarea uart_event_task pueda usarlo
     uart_sync_semaphore = sync_semaphore;
