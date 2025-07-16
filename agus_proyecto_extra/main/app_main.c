@@ -72,7 +72,7 @@ static void mqtt_event_handler_cb(void *handler_args, esp_event_base_t base, int
             ESP_LOGI(TAG, "MQTT conectado");
             // Suscribe al tópico. QOS 0
             // Usa la variable global mqtt_topic de leido_uart.c
-            esp_mqtt_client_subscribe(client, mqtt_topic, 0);
+            esp_mqtt_client_subscribe(event->client, mqtt_topic, 0);
             break;
 
         case MQTT_EVENT_DISCONNECTED:
@@ -92,9 +92,9 @@ static void mqtt_event_handler_cb(void *handler_args, esp_event_base_t base, int
             break;
 
         case MQTT_EVENT_DATA:
-            ESP_LOGI(TAG, "Mensaje recibido:");
-            printf("  TOPIC=%.*s\r\n", event->topic_len, event->topic);
-            printf("  DATA=%.*s\r\n", event->data_len, event->data);
+            printf("Mensaje recibido:\n");
+            printf("Tópico: %.*s\n", event->topic_len, event->topic);
+            printf("Mensaje: %.*s\n", event->data_len, event->data);
             break;
 
         case MQTT_EVENT_ERROR:
