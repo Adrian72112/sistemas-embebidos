@@ -20,6 +20,7 @@ static const char *TAG = "leido_uart";
 char wifi_ssid[64] = "ssid_por_defecto";
 char wifi_pass[64] = "pass_por_defecto";
 char mqtt_topic[64] = "/topico/por/defecto";
+char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
 
 // Puntero global al semáforo para que la tarea de eventos UART pueda acceder a él.
 // Será inicializado en uart_cmd_init
