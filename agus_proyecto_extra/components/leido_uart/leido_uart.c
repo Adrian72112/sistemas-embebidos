@@ -31,6 +31,7 @@ static void uart_event_task(void *pvParameters)
     uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE);
     if (dtmp == NULL) {
         ESP_LOGE(TAG, "No se pudo asignar memoria para el búfer UART. La tarea de UART finalizará.");
+char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883";
         vTaskDelete(NULL);
         return;
     }
@@ -71,6 +72,15 @@ static void uart_event_task(void *pvParameters)
                         }
                     } else {
                         ESP_LOGW(TAG, "Comando desconocido: %s", dtmp);
+                    } else if (strncmp((char *)dtmp, "!uri", 4) == 0) {
+                        char uri_temp[128];
+                        if (sscanf((char *)dtmp, "!uri %127s", uri_temp) == 1) {
+                            strncpy(mqtt_uri, uri_temp, sizeof(mqtt_uri) - 1);
+                            mqtt_uri[sizeof(mqtt_uri) - 1] = '\0';
+                            ESP_LOGI(TAG, "Nuevo URI MQTT -> %s", mqtt_uri);
+                        } else {
+                            ESP_LOGW(TAG, "Formato incorrecto para !uri. Uso: !uri <uri>");
+                        }
                     }
                     break;
 

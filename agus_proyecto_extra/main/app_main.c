@@ -13,6 +13,7 @@
 #include "mqtt_client.h"
 #include "esp_netif.h"
 #include "esp_mac.h" // ¡NUEVO! Incluir para esp_read_mac y ESP_MAC_WIFI_STA
+#include "sdkconfig.h"
 
 #include "leido_uart.h" // Nuestro componente UART, que declara extern las variables
 
@@ -131,7 +132,7 @@ static void mqtt_event_handler_cb(void *handler_args, esp_event_base_t base, int
 static void mqtt_app_start(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
-        .broker.address.uri = "mqtt://broker.hivemq.com:1883",
+        .broker.address.uri = mqtt_uri,
     };
 
     client = esp_mqtt_client_init(&mqtt_cfg);
