@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/Sofia/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/components/leido_uart
+# Install script for directory: C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/components/leido_uart
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,6 +34,6 @@ endif()
 
 # Set path to fallback-tool for dependency-resolution.
 if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "C:/Users/Sofia/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32s2-elf-objdump.exe")
+  set(CMAKE_OBJDUMP "C:/Users/Agustina/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32s2-elf-objdump.exe")
 endif()
 

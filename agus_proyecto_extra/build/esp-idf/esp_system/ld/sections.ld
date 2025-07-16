@@ -1,6 +1,6 @@
 /* Automatically generated file; DO NOT EDIT */
 /* Espressif IoT Development Framework Linker Script */
-/* Generated from: C:\Users\Sofia\OneDrive\Documents\GitHub\sistemas-embebidos\agus_proyecto_extra\build\esp-idf\esp_system\ld\sections.ld.in */
+/* Generated from: C:\Users\Agustina\OneDrive\Documents\GitHub\sistemas-embebidos\agus_proyecto_extra\build\esp-idf\esp_system\ld\sections.ld.in */
 
 /*
 
