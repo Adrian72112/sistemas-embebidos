@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h> // Agregado para strlen
-
+#include "esp_system.h"
 #include "esp_wifi.h"       // Agregado para funciones y constantes de WiFi como ESP_MAC_WIFI_STA y WIFI_SAE_MODE_PWE_BOTH
 #include "esp_system.h"     // Agregado para esp_read_mac
 #include "nvs_flash.h"
@@ -15,9 +15,7 @@
 
 #ifdef CONFIG_BUILD_TARGET_ESP32S2
 #define LED_GPIO_PIN GPIO_NUM_2 // Ejemplo de pin LED para ESP32-S2, ajustar si es necesario
-#else
 #define LED_GPIO_PIN GPIO_NUM_2 // Por defecto para otros chips, ajustar si es necesario
-#endif
 
 static const char *TAG = "MQTT_EXAMPLE";
 
