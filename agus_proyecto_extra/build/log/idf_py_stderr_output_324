@@ -1,0 +1,85 @@
+[0;33m--- Warning: GDB cannot open serial ports accessed as COMx[0m
+[0;33m--- Using \\.\COM6 instead...[0m
+[0;33m--- esp-idf-monitor 1.6.0 on \\.\COM6 115200[0m
+[0;33m--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H[0m
+[0;33m--- 0x4002e83d: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+[0m
+[0;33m--- 0x400268dc: _xt_handle_exc at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/xtensa/xtensa_vectors.S:739
+[0m
+[0;33m--- 0x4002e83a: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+--- 0x4002d0e4: xQueueSemaphoreTake at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/queue.c:1763
+--- 0x40090430: example_wifi_sta_do_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:174
+--- 0x40090618: example_wifi_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:247
+--- 0x4008feef: example_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/connect.c:99
+--- 0x40089d97: app_main at C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main/app_main.c:308
+--- 0x40119ed7: main_task at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/app_startup.c:208
+--- 0x4002d339: vPortTaskWrapper at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c:139
+[0m
+[0;33m--- 0x40025522: esp_restart_noos at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/esp_system/port/soc/esp32s2/system_internal.c:119
+[0m
+[0;33m--- 0x4002e83d: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+[0m
+[0;33m--- 0x400268dc: _xt_handle_exc at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/xtensa/xtensa_vectors.S:739
+[0m
+[0;33m--- 0x4002e83a: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+--- 0x4002d0e4: xQueueSemaphoreTake at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/queue.c:1763
+--- 0x40090430: example_wifi_sta_do_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:174
+--- 0x40090618: example_wifi_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:247
+--- 0x4008feef: example_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/connect.c:99
+--- 0x40089d97: app_main at C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main/app_main.c:308
+--- 0x40119ed7: main_task at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/app_startup.c:208
+--- 0x4002d339: vPortTaskWrapper at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c:139
+[0m
+[0;33m--- 0x40025522: esp_restart_noos at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/esp_system/port/soc/esp32s2/system_internal.c:119
+[0m
+[0;33m--- 0x4002e83d: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+[0m
+[0;33m--- 0x400268dc: _xt_handle_exc at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/xtensa/xtensa_vectors.S:739
+[0m
+[0;33m--- 0x4002e83a: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+--- 0x4002d0e4: xQueueSemaphoreTake at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/queue.c:1763
+--- 0x40090430: example_wifi_sta_do_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:174
+--- 0x40090618: example_wifi_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:247
+--- 0x4008feef: example_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/connect.c:99
+--- 0x40089d97: app_main at C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main/app_main.c:308
+--- 0x40119ed7: main_task at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/app_startup.c:208
+--- 0x4002d339: vPortTaskWrapper at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c:139
+[0m
+[0;33m--- 0x40025522: esp_restart_noos at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/esp_system/port/soc/esp32s2/system_internal.c:119
+[0m
+[0;33m--- 0x4002e83d: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+[0m
+[0;33m--- 0x400268dc: _xt_handle_exc at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/xtensa/xtensa_vectors.S:739
+[0m
+[0;33m--- 0x4002e83a: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+--- 0x4002d0e4: xQueueSemaphoreTake at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/queue.c:1763
+--- 0x40090430: example_wifi_sta_do_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:174
+--- 0x40090618: example_wifi_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:247
+--- 0x4008feef: example_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/connect.c:99
+--- 0x40089d97: app_main at C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main/app_main.c:308
+--- 0x40119ed7: main_task at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/app_startup.c:208
+--- 0x4002d339: vPortTaskWrapper at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c:139
+[0m
+[0;33m--- 0x40025522: esp_restart_noos at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/esp_system/port/soc/esp32s2/system_internal.c:119
+[0m
+[0;33m--- 0x4002e83d: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+[0m
+[0;33m--- 0x400268dc: _xt_handle_exc at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/xtensa/xtensa_vectors.S:739
+[0m
+[0;33m--- 0x4002e83a: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+--- 0x4002d0e4: xQueueSemaphoreTake at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/queue.c:1763
+--- 0x40090430: example_wifi_sta_do_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:174
+--- 0x40090618: example_wifi_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/wifi_connect.c:247
+--- 0x4008feef: example_connect at C:/Users/Agustina/esp/v5.4.1/esp-idf/examples/common_components/protocol_examples_common/connect.c:99
+--- 0x40089d97: app_main at C:/Users/Agustina/OneDrive/Documents/GitHub/sistemas-embebidos/agus_proyecto_extra/main/app_main.c:308
+--- 0x40119ed7: main_task at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/app_startup.c:208
+--- 0x4002d339: vPortTaskWrapper at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/port.c:139
+[0m
+[0;33m--- 0x40025522: esp_restart_noos at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/esp_system/port/soc/esp32s2/system_internal.c:119
+[0m
+[0;33m--- 0x4002e83d: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+[0m
+[0;33m--- 0x400268dc: _xt_handle_exc at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/xtensa/xtensa_vectors.S:739
+[0m
+[0;33m--- 0x4002e83a: xTaskRemoveFromEventList at C:/Users/Agustina/esp/v5.4.1/esp-idf/components/freertos/FreeRTOS-Kernel/tasks.c:3995
+--- 0x4002d0e4: xQueueSemaphoreTake at C:/User
