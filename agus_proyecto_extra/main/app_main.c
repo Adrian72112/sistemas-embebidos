@@ -4,14 +4,15 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-#include "freertos/semphr.h"
+#include "freertos/semphr.h"    // Incluir FreeRTOS semaphores
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "nvs_flash.h"
 #include "esp_wifi.h"
-#include "mqtt_client.h" // Revertido a esta inclusión
+#include "mqtt_client.h"
 #include "esp_netif.h"
+#include "esp_mac.h" // ¡NUEVO! Incluir para esp_read_mac y ESP_MAC_WIFI_STA
 
 #include "leido_uart.h" // Nuestro componente UART, que declara extern las variables
 
@@ -20,74 +21,47 @@ static const char *TAG = "MQTT_MAIN";
 // Cliente MQTT global
 esp_mqtt_client_handle_t client = NULL;
 
-// Semáforo para esperar que los datos UART estén listos
+// Declarar el semáforo globalmente en app_main.c
 SemaphoreHandle_t uart_data_ready_semaphore;
-// Semáforo para esperar que el WiFi esté conectado y haya obtenido IP
-SemaphoreHandle_t wifi_connected_semaphore;
 
 // Tarea para publicar mensajes MQTT periódicamente
 static void mqtt_publish_task(void *pvParameters)
 {
-    // Esperar hasta que el Wi-Fi esté conectado y haya obtenido una IP
-    // y, por ende, el cliente MQTT también esté intentando conectarse o ya conectado.
-    // Esto asegura que no intentemos publicar sin conexión de red.
-    if (xSemaphoreTake(wifi_connected_semaphore, portMAX_DELAY) == pdTRUE) {
-        ESP_LOGI(TAG, "WiFi conectado, iniciando tarea de publicación MQTT.");
-    } else {
-        ESP_LOGE(TAG, "Fallo al obtener semáforo de conexión WiFi. Tarea de publicación abortada.");
-        vTaskDelete(NULL);
-        return;
-    }
+    char payload[100]; // Buffer para el mensaje a publicar
+    // Puedes obtener un ID único para tu dispositivo, por ejemplo, usando la MAC address
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    // Formato el ID del dispositivo
+    char device_id[13]; // 12 caracteres para la MAC + null terminator
+    sprintf(device_id, "%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
 
     while (true) {
-        // La biblioteca MQTT del ESP-IDF maneja automáticamente la reconexión.
-        // Simplemente intentamos publicar. Si no está conectado, la función
-        // esp_mqtt_client_publish devolverá un error y el cliente intentará reconectar.
-        const char *payload = "Kaluga activo!"; // Mensaje de ejemplo
-        int msg_id = esp_mqtt_client_publish(client, mqtt_topic, payload, 0, 0, 0);
-        if (msg_id != -1) { // -1 indica un error en la publicación (ej. cliente no conectado)
-            ESP_LOGI(TAG, "Mensaje publicado al tópico '%s', ID: %d", mqtt_topic, msg_id);
+        // Asegúrate de que el cliente MQTT esté inicializado y conectado antes de intentar publicar
+        // La biblioteca MQTT ya maneja las reconexiones internamente.
+        if (client != NULL) { // Solo publica si el cliente MQTT ha sido inicializado
+            // Crea el mensaje a enviar. Por ejemplo: "<ID> activo"
+            sprintf(payload, "%s activo", device_id);
+
+            int msg_id = esp_mqtt_client_publish(client, mqtt_topic, payload, 0, 1, 0);
+            if (msg_id != -1) {
+                ESP_LOGI(TAG, "Mensaje publicado al tópico '%s', ID: %d", mqtt_topic, msg_id);
+            } else {
+                // Si la publicación falla, es probable que el cliente no esté conectado o haya un problema de red.
+                // La librería MQTT intentará reconectar automáticamente.
+                ESP_LOGW(TAG, "Fallo al publicar mensaje. Cliente MQTT probablemente no conectado. Reintentando...");
+            }
         } else {
-            ESP_LOGW(TAG, "Fallo al publicar mensaje. Cliente MQTT probablemente no conectado. Reintentando...");
+            ESP_LOGW(TAG, "Cliente MQTT no inicializado, esperando...");
         }
-        vTaskDelay(pdMS_TO_TICKS(50000)); // Publica cada 50 segundos
+
+        // Retraso de 50 segundos entre publicaciones
+        vTaskDelay(pdMS_TO_TICKS(50000));
     }
 }
 
-// Función de callback para eventos Wi-Fi y IP
-static void wifi_event_handler(void *arg, esp_event_base_t event_base,
-                               int32_t event_id, void *event_data)
-{
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect(); // Intentar conectar al Wi-Fi
-        ESP_LOGI(TAG, "WiFi STA iniciado. Intentando conectar...");
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGI(TAG, "WiFi desconectado. Reintentando conexión..."); //
-        esp_wifi_connect(); // Reintentar la conexión
-        // Asegurarse de que el semáforo de conexión Wi-Fi no esté dado si se desconecta
-        // Esto previene que la tarea de publicación intente publicar si el WiFi se ha caído.
-        if (xSemaphoreTake(wifi_connected_semaphore, 0) == pdTRUE) { // Intentar tomarlo sin esperar si lo poseemos
-             // Si lo tomamos es porque estaba dado, lo que significa que el WiFi se desconectó.
-             // No hacemos nada más, simplemente aseguramos que no esté dado.
-        }
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "WiFi conectado. IP: " IPSTR, IP2STR(&event->ip_info.ip)); //
 
-        // Obtener y mostrar RSSI
-        wifi_ap_record_t ap_info;
-        if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
-            ESP_LOGI(TAG, "Conectado a SSID: %s, RSSI: %d", ap_info.ssid, ap_info.rssi); //
-        }
-
-        // Liberar el semáforo para la tarea de publicación
-        if (wifi_connected_semaphore != NULL) {
-            xSemaphoreGive(wifi_connected_semaphore);
-        }
-    }
-}
-
-// Función de callback para mensajes entrantes de MQTT
+// Función de callback para mensajes entrantes
 static void mqtt_event_handler_cb(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
     esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
@@ -97,12 +71,12 @@ static void mqtt_event_handler_cb(void *handler_args, esp_event_base_t base, int
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT conectado");
             // Suscribe al tópico. QOS 0
-            esp_mqtt_client_subscribe(client, mqtt_topic, 0); //
+            // Usa la variable global mqtt_topic de leido_uart.c
+            esp_mqtt_client_subscribe(client, mqtt_topic, 0);
             break;
 
         case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGI(TAG, "MQTT desconectado. Intentando reconectar..."); //
-            // El cliente MQTT de ESP-IDF tiene lógica de reconexión automática por defecto.
+            ESP_LOGI(TAG, "MQTT desconectado");
             break;
 
         case MQTT_EVENT_SUBSCRIBED:
@@ -118,14 +92,14 @@ static void mqtt_event_handler_cb(void *handler_args, esp_event_base_t base, int
             break;
 
         case MQTT_EVENT_DATA:
-            ESP_LOGI(TAG, "Mensaje recibido:"); //
-            printf("  TOPIC=%.*s\r\n", event->topic_len, event->topic); //
-            printf("  DATA=%.*s\r\n", event->data_len, event->data); //
+            ESP_LOGI(TAG, "Mensaje recibido:");
+            printf("  TOPIC=%.*s\r\n", event->topic_len, event->topic);
+            printf("  DATA=%.*s\r\n", event->data_len, event->data);
             break;
 
         case MQTT_EVENT_ERROR:
             ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
-            if (event->error_handle) {
+            if (event->error_handle) { // Asegurarse de que error_handle no sea NULL
                 if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
                     ESP_LOGE(TAG, "Error de transporte TCP: 0x%x", event->error_handle->connect_return_code);
                 }
@@ -157,7 +131,7 @@ static void mqtt_event_handler_cb(void *handler_args, esp_event_base_t base, int
 static void mqtt_app_start(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
-        .broker.address.uri = "mqtt://broker.hivemq.com:1883", // Broker MQTT URI
+        .broker.address.uri = "mqtt://broker.hivemq.com:1883",
     };
 
     client = esp_mqtt_client_init(&mqtt_cfg);
@@ -192,7 +166,9 @@ static void wifi_init_sta(void)
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start()); // Esto enviará WIFI_EVENT_STA_START
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    ESP_LOGI(TAG, "WiFi iniciado con SSID: %s", wifi_ssid);
 }
 
 void app_main(void)
@@ -205,26 +181,18 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    // Crear los semáforos binarios
+    // Crear el semáforo binario
     uart_data_ready_semaphore = xSemaphoreCreateBinary();
     if (uart_data_ready_semaphore == NULL) {
-        ESP_LOGE(TAG, "Fallo al crear semáforo UART. Reiniciando...");
+        ESP_LOGE(TAG, "Fallo al crear el semáforo. Reiniciando...");
         esp_restart();
     }
-    wifi_connected_semaphore = xSemaphoreCreateBinary();
-    if (wifi_connected_semaphore == NULL) {
-        ESP_LOGE(TAG, "Fallo al crear semáforo WiFi. Reiniciando...");
-        esp_restart();
-    }
-
-    // Registrar el manejador de eventos Wi-Fi y IP
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
 
     // 1. Iniciar UART para recibir comandos (SSID, Contraseña, Tópico MQTT)
-    leido_uart_init(uart_data_ready_semaphore); // Pasa el handle del semáforo al componente UART
+    // Pasamos el handle del semáforo a la función de inicialización del UART
+    leido_uart_init(uart_data_ready_semaphore);
 
-    // 2. Inicializar WiFi y Event Loop
+    // 2. Inicializar WiFi y Event Loop antes de esperar
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_sta();
@@ -235,7 +203,7 @@ void app_main(void)
     if (xSemaphoreTake(uart_data_ready_semaphore, portMAX_DELAY) == pdTRUE) {
         ESP_LOGI(TAG, "Comandos UART recibidos. Continuando con la inicialización de WiFi y MQTT.");
     } else {
-        ESP_LOGE(TAG, "Error: El semáforo UART no se liberó inesperadamente.");
+        ESP_LOGE(TAG, "Error: El semáforo no se liberó inesperadamente.");
     }
 
     // 3. Inicializar WiFi usando los datos recibidos del UART
@@ -244,9 +212,7 @@ void app_main(void)
     // 4. Iniciar conexión al broker MQTT
     mqtt_app_start();
 
-    // 5. Crear la tarea de publicación MQTT
-    // Esta tarea esperará internamente por el semáforo 'wifi_connected_semaphore'
-    // antes de empezar a publicar.
+    // 5. Crear la tarea de publicación MQTT después de iniciar el cliente
     xTaskCreate(mqtt_publish_task, "mqtt_pub_task", 4096, NULL, 5, NULL);
 
     // La tarea principal de app_main continuará ejecutándose.
