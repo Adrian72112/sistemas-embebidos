@@ -4,7 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-#include "freertos/semphr.h"    // Incluir FreeRTOS semaphores
+#include "freertos/semphr.h"    // Incluir FreeRTOS semaforos
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_event.h"
@@ -12,10 +12,10 @@
 #include "esp_wifi.h"
 #include "mqtt_client.h"
 #include "esp_netif.h"
-#include "esp_mac.h" // ¡NUEVO! Incluir para esp_read_mac y ESP_MAC_WIFI_STA
+#include "esp_mac.h"
 #include "sdkconfig.h"
 
-#include "leido_uart.h" // Nuestro componente UART, que declara extern las variables
+#include "leido_uart.h" // Nuestro componente UART, que declara externas las variables
 
 static const char *TAG = "MQTT_MAIN";
 
