@@ -1,4 +1,3 @@
-#include "leido_uart.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +6,7 @@
 #include "freertos/queue.h"
 #include "driver/uart.h"
 #include "esp_log.h"
+#include "leido_uart.h"
 
 #define EX_UART_NUM UART_NUM_0
 #define BUF_SIZE (1024)

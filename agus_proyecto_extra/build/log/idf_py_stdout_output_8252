@@ -1,1 +1,0 @@
-could not open port '\\\\.\\COM6': PermissionError(13, 'Acceso denegado.', None, 5)
