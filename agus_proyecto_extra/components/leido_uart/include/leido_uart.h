@@ -9,6 +9,8 @@
 extern char wifi_ssid[64];
 extern char wifi_pass[64];
 extern char mqtt_topic[64];
+extern char mqtt_uri[128];
+
 
 // Declaración de la función de inicialización del UART de comandos
 // Ahora recibe un handle a un semáforo
