@@ -143,25 +143,11 @@ static void connection_monitor_task(void *pvParameters)
         // Log de estado cada minuto (4 ciclos de 15 segundos)
         static int status_counter = 0;
         if (++status_counter >= 4) {
-            char wifi_status[3];  // Para "si" o "no" + '\0'
-            char mqtt_status[3];
-
-            if (wifi_connected) {
-                strcpy(wifi_status, "si");
-            } else {
-                strcpy(wifi_status, "no");
-            }
-
-            if (mqtt_connected) {
-                strcpy(mqtt_status, "si");
-            } else {
-                strcpy(mqtt_status, "no");
-            }
-
-            ESP_LOGI(TAG, "Estado: WiFi=%s, MQTT=%s", wifi_status, mqtt_status);
+            ESP_LOGI(TAG, "Estado: WiFi=%s, MQTT=%s", 
+                     wifi_connected ? "si" : "no", 
+                     mqtt_connected ? "si" : "no");
             status_counter = 0;
         }
-
     }
 }
 
@@ -206,7 +192,7 @@ static void mqtt_publish_task(void *pvParameters)
                 ESP_LOGI(TAG, "Publicando mensaje personalizado: '%s' al tópico: '%s'", 
                          custom_msg.message, mqtt_topic);
                 
-                int msg_id = esp_mqtt_client_publish(client, mqtt_topic, custom_msg.message, 0, 1, 0);//qos 1
+                int msg_id = esp_mqtt_client_publish(client, mqtt_topic, custom_msg.message, 0, 1, 0);
                 
                 if (msg_id != -1) {
                     ESP_LOGI(TAG, "Mensaje personalizado publicado exitosamente - ID: %d", msg_id);
@@ -225,7 +211,7 @@ static void mqtt_publish_task(void *pvParameters)
                 sprintf(payload, "%s activo", device_id);
 
                 ESP_LOGI(TAG, "Publicando mensaje periódico: '%s' al tópico: '%s'", payload, mqtt_topic);
-                int msg_id = esp_mqtt_client_publish(client, mqtt_topic, payload, 0, 1, 0); //publica que el suscriptor esta activo
+                int msg_id = esp_mqtt_client_publish(client, mqtt_topic, payload, 0, 1, 0);
                 
                 if (msg_id != -1) {
                     ESP_LOGI(TAG, "Mensaje periódico publicado exitosamente - ID: %d", msg_id);
@@ -246,49 +232,38 @@ static void mqtt_publish_task(void *pvParameters)
     }
 }
 
+
+// Event handler para eventos WiFi - Con lógica de reconexión mejorada
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                int32_t event_id, void* event_data)
 {
-    if (event_base == WIFI_EVENT) {
-        switch (event_id) {
-            case WIFI_EVENT_STA_START:
-                ESP_LOGI(TAG, "WiFi iniciado, conectando...");
-                esp_wifi_connect();
-                break;
-            case WIFI_EVENT_STA_DISCONNECTED:
-                wifi_connected = false;
-                mqtt_connected = false;
-                ESP_LOGW(TAG, "WiFi desconectado, reintentando conexión en 5 segundos...");
-                vTaskDelay(pdMS_TO_TICKS(5000));
-                esp_wifi_connect();
-                break;
-            default:
-                break;
-        }
-    } else if (event_base == IP_EVENT) {
-        switch (event_id) {
-            case IP_EVENT_STA_GOT_IP:
-                ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-                ESP_LOGI(TAG, "WiFi conectado! IP obtenida: " IPSTR, IP2STR(&event->ip_info.ip));
-                wifi_connected = true;
-                xSemaphoreGive(wifi_connected_semaphore);
-                if (client != NULL && !mqtt_connected) {
-                    ESP_LOGI(TAG, "WiFi reconectado, reintentando conexión MQTT...");
-                    esp_mqtt_client_reconnect(client);
-                }
-                break;
-            default:
-                break;
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        ESP_LOGI(TAG, "WiFi iniciado, conectando...");
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        wifi_connected = false;
+        mqtt_connected = false; // También marcar MQTT como desconectado
+        ESP_LOGW(TAG, "WiFi desconectado, reintentando conexión en 5 segundos...");
+        
+        // Esperar un poco antes de reconectar para evitar loops muy rápidos
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        esp_wifi_connect();
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ESP_LOGI(TAG, "WiFi conectado! IP obtenida: " IPSTR, IP2STR(&event->ip_info.ip));
+        wifi_connected = true;
+        xSemaphoreGive(wifi_connected_semaphore);
+        
+        // Si WiFi se reconectó, intentar reconectar MQTT también
+        if (client != NULL && !mqtt_connected) {
+            ESP_LOGI(TAG, "WiFi reconectado, reintentando conexión MQTT...");
+            esp_mqtt_client_reconnect(client);
         }
     }
 }
 
-
-
-
-
 // Inicializar MQTT con event handler y configuración completa
-static void mqtt_app_start(void) //inicializa el cliente MQTT
+static void mqtt_app_start(void)
 {
     // Validar que tengamos URI y topic válidos
     if (strlen(mqtt_uri) == 0) {
@@ -312,7 +287,7 @@ static void mqtt_app_start(void) //inicializa el cliente MQTT
     }
 
     // Configuración MQTT mejorada con timeouts y reconexión automática
-    esp_mqtt_client_config_t mqtt_cfg = {//struct utilizada por esp para configurar el mqtt
+    esp_mqtt_client_config_t mqtt_cfg = {
         .broker = {
             .address.uri = mqtt_uri,
         },
@@ -372,7 +347,7 @@ static void wifi_init_sta(void)
     // Inicializar configuración WiFi
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
-    wifi_config_t wifi_config = {//struct utilizada por esp para configurar el wifi
+    wifi_config_t wifi_config = {
         .sta = {
             .ssid = {0}, // Inicializa a cero para strncpy
             .password = {0}, // Inicializa a cero para strncpy
@@ -402,7 +377,7 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "INICIANDO APLICACIÓN ESP32-S2");
     
-    //Inicializar NVS
+    // Inicializar NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -444,7 +419,7 @@ void app_main(void)
     ESP_LOGI(TAG, "WiFi inicializado");
 
     // Esperar aquí hasta que los datos de UART sean recibidos y el semáforo sea liberado
-    ESP_LOGI(TAG, " ESPERANDO COMANDOS UART ");
+    ESP_LOGI(TAG, "=== ESPERANDO COMANDOS UART ===");
     ESP_LOGI(TAG, "Envía los siguientes comandos:");
     ESP_LOGI(TAG, "  !wifi <ssid> <password>");
     ESP_LOGI(TAG, "  !topic <topico>");
@@ -452,7 +427,7 @@ void app_main(void)
     ESP_LOGI(TAG, "  !done");
     
     if (xSemaphoreTake(uart_data_ready_semaphore, portMAX_DELAY) == pdTRUE) {
-        ESP_LOGI(TAG, " COMANDOS UART RECIBIDOS ");
+        ESP_LOGI(TAG, "=== COMANDOS UART RECIBIDOS ===");
         ESP_LOGI(TAG, "WiFi SSID: '%s'", wifi_ssid);
         ESP_LOGI(TAG, "WiFi Password: [%d caracteres]", strlen(wifi_pass));
         ESP_LOGI(TAG, "MQTT Topic: '%s'", mqtt_topic);
@@ -467,8 +442,8 @@ void app_main(void)
     wifi_init_sta();
 
     // Esperar a que WiFi se conecte
-    ESP_LOGI(TAG, "Esperando conexión WiFi...");//espera la conexion wifi
-    if (xSemaphoreTake(wifi_connected_semaphore, pdMS_TO_TICKS(30000)) == pdTRUE) {//bloquea la ejecución hasta que se libere
+    ESP_LOGI(TAG, "Esperando conexión WiFi...");
+    if (xSemaphoreTake(wifi_connected_semaphore, pdMS_TO_TICKS(30000)) == pdTRUE) {
         ESP_LOGI(TAG, "WIFI CONECTADO EXITOSAMENTE");
     } else {
         ESP_LOGE(TAG, "TIMEOUT: NO SE PUDO CONECTAR AL WIFI");
