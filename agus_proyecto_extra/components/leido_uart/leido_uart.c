@@ -1,4 +1,3 @@
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +22,9 @@ char wifi_pass[64] = "";  // Iniciamos vacío para detectar si no se configuró
 char mqtt_topic[64] = "/test/topic";  // Tópico por defecto más específico
 char mqtt_uri[128] = "mqtt://broker.hivemq.com:1883"; // Declaración global de mqtt_uri
 
+// Cola global para mensajes personalizados de MQTT
+QueueHandle_t mqtt_message_queue = NULL;
+
 // Puntero global al semáforo para que la tarea de eventos UART pueda acceder a él.
 // Será inicializado en uart_cmd_init
 static SemaphoreHandle_t uart_sync_semaphore = NULL;
@@ -33,7 +35,6 @@ static void uart_event_task(void *pvParameters)
     uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE);
     if (dtmp == NULL) {
         ESP_LOGE(TAG, "No se pudo asignar memoria para el búfer UART. La tarea de UART finalizará.");
-        // Se ha ELIMINADO la declaración redundante de mqtt_uri aquí.
         vTaskDelete(NULL);
         return;
     }
@@ -145,8 +146,39 @@ static void uart_event_task(void *pvParameters)
                         ESP_LOGI(TAG, "!wifi <ssid> <password> - Configurar red WiFi");
                         ESP_LOGI(TAG, "!topic <topico>        - Configurar tópico MQTT");
                         ESP_LOGI(TAG, "!uri <uri>             - Configurar URI broker MQTT (opcional)");
+                        ESP_LOGI(TAG, "!pub <mensaje>         - Publicar mensaje personalizado en MQTT");
                         ESP_LOGI(TAG, "!done                  - Finalizar configuración e iniciar");
                         ESP_LOGI(TAG, "!help                  - Mostrar esta ayuda");
+                    } else if (strncmp((char *)dtmp, "!pub", 4) == 0) {
+                        // Comando para publicar mensaje personalizado
+                        char *message_start = (char *)dtmp + 4; // Saltar "!pub"
+                        
+                        // Saltar espacios después de !pub
+                        while (*message_start == ' ' && *message_start != '\0') {
+                            message_start++;
+                        }
+                        
+                        if (strlen(message_start) > 0) {
+                            // Verificar que la cola esté disponible
+                            if (mqtt_message_queue != NULL) {
+                                mqtt_custom_message_t custom_msg;
+                                
+                                // Copiar el mensaje limitando el tamaño
+                                strncpy(custom_msg.message, message_start, sizeof(custom_msg.message) - 1);
+                                custom_msg.message[sizeof(custom_msg.message) - 1] = '\0';
+                                
+                                // Enviar mensaje a la cola (sin bloqueo)
+                                if (xQueueSend(mqtt_message_queue, &custom_msg, 0) == pdTRUE) {
+                                    ESP_LOGI(TAG, "✓ Mensaje enviado a MQTT: '%s'", custom_msg.message);
+                                } else {
+                                    ESP_LOGW(TAG, "✗ Error: Cola MQTT llena. Mensaje no enviado");
+                                }
+                            } else {
+                                ESP_LOGW(TAG, "✗ Error: Sistema MQTT no inicializado. Use !done primero");
+                            }
+                        } else {
+                            ESP_LOGW(TAG, "✗ Formato incorrecto para !pub. Uso: !pub <mensaje>");
+                        }
                     } else { // Este 'else' ahora captura todos los comandos desconocidos
                         ESP_LOGW(TAG, "✗ Comando desconocido: '%s'. Envía !help para ver comandos disponibles", dtmp);
                     }
@@ -180,15 +212,16 @@ static void uart_event_task(void *pvParameters)
             }
         }
     }
-    // free(dtmp); // Inalcanzable en un for(;;)
-    // vTaskDelete(NULL); // Inalcanzable en un for(;;)
 }
 
 // Función de inicialización del UART de comandos
-void leido_uart_init(SemaphoreHandle_t sync_semaphore)
+void leido_uart_init(SemaphoreHandle_t sync_semaphore, QueueHandle_t message_queue)
 {
     // Almacenar el handle del semáforo para que la tarea uart_event_task pueda usarlo
     uart_sync_semaphore = sync_semaphore;
+    
+    // Almacenar el handle de la cola para enviar mensajes personalizados
+    mqtt_message_queue = message_queue;
 
     uart_config_t uart_config = {
         .baud_rate = 115200,
@@ -209,6 +242,7 @@ void leido_uart_init(SemaphoreHandle_t sync_semaphore)
     ESP_LOGI(TAG, "  !wifi <ssid> <password>");
     ESP_LOGI(TAG, "  !topic <topico>");
     ESP_LOGI(TAG, "  !uri <uri_broker> (opcional)");
+    ESP_LOGI(TAG, "  !pub <mensaje> (después de !done)");
     ESP_LOGI(TAG, "  !done");
-    ESP_LOGI(TAG, "  !help (para ayuda)");
+    ESP_LOGI(TAG, "  !help (para ayuda)");
 }
