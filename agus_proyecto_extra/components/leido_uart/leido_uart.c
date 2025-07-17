@@ -68,13 +68,13 @@ static void uart_event_task(void *pvParameters)
                                 wifi_ssid[sizeof(wifi_ssid) - 1] = '\0';
                                 strncpy(wifi_pass, pass_temp, sizeof(wifi_pass) - 1);
                                 wifi_pass[sizeof(wifi_pass) - 1] = '\0';
-                                ESP_LOGI(TAG, "✓ WiFi configurado -> SSID: '%s', Password: [%d caracteres]", 
+                                ESP_LOGI(TAG, "WiFi configurado -> SSID: '%s', Password: [%d caracteres]", 
                                         wifi_ssid, strlen(wifi_pass));
                             } else {
-                                ESP_LOGW(TAG, "✗ SSID o password vacíos");
+                                ESP_LOGW(TAG, "SSID o password vacíos");
                             }
                         } else {
-                            ESP_LOGW(TAG, "✗ Formato incorrecto para !wifi. Uso: !wifi <ssid> <pass>");
+                            ESP_LOGW(TAG, "Formato incorrecto para !wifi. Uso: !wifi <ssid> <pass>");
                         }
                     } else if (strncmp((char *)dtmp, "!topic", 6) == 0) {
                         char topic_temp[64];
@@ -84,12 +84,12 @@ static void uart_event_task(void *pvParameters)
                             if (strlen(topic_temp) > 0) {
                                 strncpy(mqtt_topic, topic_temp, sizeof(mqtt_topic) - 1);
                                 mqtt_topic[sizeof(mqtt_topic) - 1] = '\0';
-                                ESP_LOGI(TAG, "✓ Tópico MQTT configurado -> '%s'", mqtt_topic);
+                                ESP_LOGI(TAG, "Tópico MQTT configurado -> '%s'", mqtt_topic);
                             } else {
-                                ESP_LOGW(TAG, "✗ Tópico vacío");
+                                ESP_LOGW(TAG, "Tópico vacío");
                             }
                         } else {
-                            ESP_LOGW(TAG, "✗ Formato incorrecto para !topic. Uso: !topic <topico>");
+                            ESP_LOGW(TAG, "Formato incorrecto para !topic. Uso: !topic <topico>");
                         }
                     } else if (strncmp((char *)dtmp, "!uri", 4) == 0) {
                         char uri_temp[128];
@@ -99,50 +99,50 @@ static void uart_event_task(void *pvParameters)
                             if (strlen(uri_temp) > 0) {
                                 strncpy(mqtt_uri, uri_temp, sizeof(mqtt_uri) - 1);
                                 mqtt_uri[sizeof(mqtt_uri) - 1] = '\0';
-                                ESP_LOGI(TAG, "✓ URI MQTT configurado -> '%s'", mqtt_uri);
+                                ESP_LOGI(TAG, "URI MQTT configurado -> '%s'", mqtt_uri);
                             } else {
-                                ESP_LOGW(TAG, "✗ URI vacío");
+                                ESP_LOGW(TAG, "URI vacío");
                             }
                         } else {
-                            ESP_LOGW(TAG, "✗ Formato incorrecto para !uri. Uso: !uri <uri>");
+                            ESP_LOGW(TAG, "Formato incorrecto para !uri. Uso: !uri <uri>");
                         }
                     } else if (strncmp((char *)dtmp, "!done", 5) == 0) {
-                        ESP_LOGI(TAG, "=== COMANDO !done RECIBIDO ===");
+                        ESP_LOGI(TAG, "COMANDO !done RECIBIDO");
                         
                         // Validar que tenemos la configuración mínima necesaria
                         bool config_valid = true;
                         
                         if (strlen(wifi_ssid) == 0) {
-                            ESP_LOGE(TAG, "✗ ERROR: SSID WiFi no configurado");
+                            ESP_LOGE(TAG, "ERROR: SSID WiFi no configurado");
                             config_valid = false;
                         }
                         
                         if (strlen(wifi_pass) == 0) {
-                            ESP_LOGE(TAG, "✗ ERROR: Password WiFi no configurado");
+                            ESP_LOGE(TAG, "ERROR: Password WiFi no configurado");
                             config_valid = false;
                         }
                         
                         if (strlen(mqtt_topic) == 0) {
-                            ESP_LOGE(TAG, "✗ ERROR: Tópico MQTT no configurado");
+                            ESP_LOGE(TAG, "ERROR: Tópico MQTT no configurado");
                             config_valid = false;
                         }
                         
                         if (config_valid) {
-                            ESP_LOGI(TAG, "✓ Configuración completa y válida:");
-                            ESP_LOGI(TAG, "  - WiFi SSID: '%s'", wifi_ssid);
-                            ESP_LOGI(TAG, "  - WiFi Pass: [%d caracteres]", strlen(wifi_pass));
-                            ESP_LOGI(TAG, "  - MQTT Topic: '%s'", mqtt_topic);
-                            ESP_LOGI(TAG, "  - MQTT URI: '%s'", mqtt_uri);
+                            ESP_LOGI(TAG, "Configuración completa y válida:");
+                            ESP_LOGI(TAG, "WiFi SSID: '%s'", wifi_ssid);
+                            ESP_LOGI(TAG, "WiFi Pass: [%d caracteres]", strlen(wifi_pass));
+                            ESP_LOGI(TAG, "MQTT Topic: '%s'", mqtt_topic);
+                            ESP_LOGI(TAG, "MQTT URI: '%s'", mqtt_uri);
                             ESP_LOGI(TAG, "Liberando semáforo para continuar...");
                             
                             if (uart_sync_semaphore != NULL) {
                                 xSemaphoreGive(uart_sync_semaphore); // Liberar el semáforo para desbloquear app_main
                             }
                         } else {
-                            ESP_LOGE(TAG, "✗ Configuración incompleta. Configure todos los parámetros antes de usar !done");
+                            ESP_LOGE(TAG, "Configuración incompleta. Configure todos los parámetros antes de usar !done");
                         }
                     } else if (strncmp((char *)dtmp, "!help", 5) == 0) {
-                        ESP_LOGI(TAG, "=== COMANDOS DISPONIBLES ===");
+                        ESP_LOGI(TAG, "COMANDOS DISPONIBLES");
                         ESP_LOGI(TAG, "!wifi <ssid> <password> - Configurar red WiFi");
                         ESP_LOGI(TAG, "!topic <topico>        - Configurar tópico MQTT");
                         ESP_LOGI(TAG, "!uri <uri>             - Configurar URI broker MQTT (opcional)");
@@ -169,18 +169,18 @@ static void uart_event_task(void *pvParameters)
                                 
                                 // Enviar mensaje a la cola (sin bloqueo)
                                 if (xQueueSend(mqtt_message_queue, &custom_msg, 0) == pdTRUE) {
-                                    ESP_LOGI(TAG, "✓ Mensaje enviado a MQTT: '%s'", custom_msg.message);
+                                    ESP_LOGI(TAG, "Mensaje enviado a MQTT: '%s'", custom_msg.message);
                                 } else {
-                                    ESP_LOGW(TAG, "✗ Error: Cola MQTT llena. Mensaje no enviado");
+                                    ESP_LOGW(TAG, "Error: Cola MQTT llena. Mensaje no enviado");
                                 }
                             } else {
-                                ESP_LOGW(TAG, "✗ Error: Sistema MQTT no inicializado. Use !done primero");
+                                ESP_LOGW(TAG, "Error: Sistema MQTT no inicializado. Use !done primero");
                             }
                         } else {
-                            ESP_LOGW(TAG, "✗ Formato incorrecto para !pub. Uso: !pub <mensaje>");
+                            ESP_LOGW(TAG, "Formato incorrecto para !pub. Uso: !pub <mensaje>");
                         }
                     } else { // Este 'else' ahora captura todos los comandos desconocidos
-                        ESP_LOGW(TAG, "✗ Comando desconocido: '%s'. Envía !help para ver comandos disponibles", dtmp);
+                        ESP_LOGW(TAG, "Comando desconocido: '%s'. Envía !help para ver comandos disponibles", dtmp);
                     }
                     break;
 
@@ -237,7 +237,7 @@ void leido_uart_init(SemaphoreHandle_t sync_semaphore, QueueHandle_t message_que
     ESP_ERROR_CHECK(uart_set_pin(EX_UART_NUM, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
 
     xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 10, NULL);
-    ESP_LOGI(TAG, "=== UART INICIALIZADO ===");
+    ESP_LOGI(TAG, "UART INICIALIZADO");
     ESP_LOGI(TAG, "Envía comandos:");
     ESP_LOGI(TAG, "  !wifi <ssid> <password>");
     ESP_LOGI(TAG, "  !topic <topico>");
