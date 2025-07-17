@@ -32,7 +32,7 @@ static SemaphoreHandle_t uart_sync_semaphore = NULL;
 static void uart_event_task(void *pvParameters)
 {
     uart_event_t event;
-    uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE); //dtmp puntero a buffer, para almacenar datos UART
+    uint8_t* dtmp = (uint8_t*) malloc(RD_BUF_SIZE);
     if (dtmp == NULL) {
         ESP_LOGE(TAG, "No se pudo asignar memoria para el búfer UART. La tarea de UART finalizará.");
         vTaskDelete(NULL);
@@ -57,14 +57,13 @@ static void uart_event_task(void *pvParameters)
                     
                     ESP_LOGI(TAG, "Comando recibido: '%s' (longitud: %d)", dtmp, strlen((char*)dtmp));
 
-                    if (strncmp((char *)dtmp, "!wifi", 5) == 0) {//compara los 5 caracteres
+                    if (strncmp((char *)dtmp, "!wifi", 5) == 0) {
                         char ssid_temp[64], pass_temp[64];
-                        int parsed = sscanf((char *)dtmp, "!wifi %63s %63s", ssid_temp, pass_temp);//extrae SSID y password
-                        //int parsed es 2 si extrae las dos cadenas, 1 si extra solo 1, 0 ninguna
+                        int parsed = sscanf((char *)dtmp, "!wifi %63s %63s", ssid_temp, pass_temp);
                         
                         if (parsed == 2) {
                             // Validar que SSID y password no estén vacíos
-                            if (strlen(ssid_temp) > 0 && strlen(pass_temp) > 0) {//si nos son vacias las copia en wifi_ssid y wifi_pass
+                            if (strlen(ssid_temp) > 0 && strlen(pass_temp) > 0) {
                                 strncpy(wifi_ssid, ssid_temp, sizeof(wifi_ssid) - 1);
                                 wifi_ssid[sizeof(wifi_ssid) - 1] = '\0';
                                 strncpy(wifi_pass, pass_temp, sizeof(wifi_pass) - 1);
@@ -145,11 +144,11 @@ static void uart_event_task(void *pvParameters)
                     } else if (strncmp((char *)dtmp, "!help", 5) == 0) {
                         ESP_LOGI(TAG, "COMANDOS DISPONIBLES");
                         ESP_LOGI(TAG, "!wifi <ssid> <password> - Configurar red WiFi");
-                        ESP_LOGI(TAG, "!topic <topico> - Configurar tópico MQTT");
-                        ESP_LOGI(TAG, "!uri <uri> - Configurar URI broker MQTT (opcional)");
-                        ESP_LOGI(TAG, "!pub <mensaje> - Publicar mensaje personalizado en MQTT");
-                        ESP_LOGI(TAG, "!done - Finalizar configuración e iniciar");
-                        ESP_LOGI(TAG, "!help  - Mostrar esta ayuda");
+                        ESP_LOGI(TAG, "!topic <topico>        - Configurar tópico MQTT");
+                        ESP_LOGI(TAG, "!uri <uri>             - Configurar URI broker MQTT (opcional)");
+                        ESP_LOGI(TAG, "!pub <mensaje>         - Publicar mensaje personalizado en MQTT");
+                        ESP_LOGI(TAG, "!done                  - Finalizar configuración e iniciar");
+                        ESP_LOGI(TAG, "!help                  - Mostrar esta ayuda");
                     } else if (strncmp((char *)dtmp, "!pub", 4) == 0) {
                         // Comando para publicar mensaje personalizado
                         char *message_start = (char *)dtmp + 4; // Saltar "!pub"
