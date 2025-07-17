@@ -18,6 +18,7 @@
 
 // Declaraciones de funciones
 static void mqtt_app_start(void);
+
 static const char *TAG = "MQTT_MAIN";
 
 // Cliente MQTT global
@@ -50,7 +51,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             mqtt_connected = true;
             
             // Suscribirse al tópico automáticamente al conectar
-            int sub_id = esp_mqtt_client_subscribe(event->client, mqtt_topic, 0);
+            int sub_id = esp_mqtt_client_subscribe(event->client, mqtt_topic, 0);// se suscribe con qos 0
             if (sub_id != -1) {
                 ESP_LOGI(TAG, "Suscrito al tópico: '%s' (msg_id: %d)", mqtt_topic, sub_id);
             } else {
@@ -80,30 +81,22 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             ESP_LOGI(TAG, "Tópico: %.*s", event->topic_len, event->topic);
             ESP_LOGI(TAG, "Mensaje: %.*s", event->data_len, event->data);
             ESP_LOGI(TAG, "QoS: %d, Retain: %d", event->qos, event->retain);
-            ESP_LOGI(TAG, "==========================================");
             
             // También mostrar en printf para mayor visibilidad
-            printf("\n=== MENSAJE MQTT RECIBIDO ===\n");
+            printf("\n  MENSAJE MQTT RECIBIDO \n");
             printf("Tópico: %.*s\n", event->topic_len, event->topic);
             printf("Mensaje: %.*s\n", event->data_len, event->data);
-            printf("=============================\n\n");
             break;
 
         case MQTT_EVENT_ERROR:
             ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
             mqtt_connected = false;
             if (event->error_handle) {
-                if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
-                    ESP_LOGE(TAG, "Error de transporte TCP: 0x%x", event->error_handle->connect_return_code);
-                }
-                else if (event->error_handle->error_type == MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
+                if (event->error_handle->error_type == MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
                     ESP_LOGE(TAG, "Error de conexión MQTT: %d", event->error_handle->connect_return_code);
                 }
                 else if (event->error_handle->error_type == MQTT_ERROR_TYPE_NONE && event->error_handle->connect_return_code != 0) {
                      ESP_LOGE(TAG, "Error de protocolo MQTT (código de retorno): %d", event->error_handle->connect_return_code);
-                }
-                else if (event->error_handle->error_type == MQTT_ERROR_TYPE_ESP_TLS) {
-                    ESP_LOGE(TAG, "Error TLS: 0x%x", event->error_handle->esp_tls_stack_err);
                 }
                 else {
                     ESP_LOGE(TAG, "Otro tipo de error MQTT. Código de retorno: %d, Tipo de error: %d",
